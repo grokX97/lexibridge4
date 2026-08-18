@@ -11,7 +11,7 @@
 <title>LexiBridge 4 · 英德法概念词汇</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="styles.css?v=9">
-<script src="https://js.puter.com/v2/"></script>
+<script defer src="https://js.puter.com/v2/"></script>
 </head>
 <body>
 <div id="app">
@@ -138,7 +138,7 @@
   <div class="card settings">
     <h2>AI 四语学习包</h2>
     <p class="settingNote">AI 按词生成并缓存：三语词形、词族、同义/反义词、核心搭配和平行例句。每一行都以中文语义为锚点，英语、德语、法语必须表达同一功能，而不是逐字硬译。</p>
-    <label>模型<select id="aiModel"><option value="anthropic/claude-sonnet-5">Claude Sonnet 5（最高质量）</option><option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6（稳定）</option><option value="anthropic/claude-haiku-4-5">Claude Haiku 4.5（节省额度）</option></select></label>
+    <label>模型<select id="aiModel"><option value="claude-sonnet-4-6">Claude Sonnet 4.6（推荐）</option><option value="gpt-5.5">GPT-5.5（高质量）</option><option value="gpt-5.4">GPT-5.4（稳定）</option></select></label>
     <label class="toggleLabel"><span>自动为打开的词生成</span><input id="autoAI" type="checkbox"></label>
     <label class="toggleLabel"><span>双重校对（生成后再批判修订）</span><input id="doublePass" type="checkbox"></label>
     <button class="secondary full" type="button" id="aiSignInBtn">登录 Puter 并启用 AI</button>

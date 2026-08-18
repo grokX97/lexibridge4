@@ -26,7 +26,7 @@ const defaultState = () => ({
   settings:{
     dailyNew:6,reviewCap:90,startRank:2501,languageMode:'all',directionMode:'adaptive',
     masterReps:5,masterDays:30,pageSize:40,theme:'system',
-    aiModel:'anthropic/claude-sonnet-5',autoAI:true,doublePass:true
+    aiModel:'claude-sonnet-4-6',autoAI:true,doublePass:true
   },
   progress:{},reviews:0,richIndex:[],lastCloudSync:0
 });
@@ -634,9 +634,36 @@ function normalizePack(raw,c){
   if(pack.collocations.length<6||pack.examples.length<4)throw new Error('AI 内容不足：搭配或例句数量过少');
   return pack;
 }
+let modelCatalogPromise = null;
+async function resolveAiModel(preferred){
+  const clean=String(preferred||'').replace(/^anthropic\//,'');
+  try{
+    modelCatalogPromise ||= window.puter.ai.listModels();
+    const models=await modelCatalogPromise;
+    const ids=new Set();
+    for(const m of Array.isArray(models)?models:[]){
+      if(m?.id)ids.add(String(m.id));
+      for(const a of Array.isArray(m?.aliases)?m.aliases:[])ids.add(String(a));
+    }
+    for(const id of [preferred,clean,'claude-sonnet-4-6','gpt-5.5','gpt-5.4','gpt-5-nano']){
+      if(id&&ids.has(id))return id;
+    }
+    const available=[...ids];
+    return available.find(x=>/claude.*sonnet/i.test(x))
+      ||available.find(x=>/^gpt-5(?:\.|-|$)/i.test(x))
+      ||available[0]
+      ||clean
+      ||undefined;
+  }catch{
+    return clean||undefined;
+  }
+}
 async function callAi(prompt,model=state.settings.aiModel){
   await ensureAiAuth();
-  const res=await window.puter.ai.chat(prompt,{model,temperature:0.15,max_tokens:12000});
+  const resolved=await resolveAiModel(model);
+  const options={temperature:0.15,max_tokens:12000};
+  if(resolved)options.model=resolved;
+  const res=await window.puter.ai.chat(prompt,options);
   return extractResponseText(res);
 }
 async function generatePack(c,{force=false,review=null}={}){
@@ -733,7 +760,7 @@ async function showStudyTask(){
   if(!currentTask){toast('今日学习完成');switchView('homeView');renderHome();return;}
   const {card:c,lang}=currentTask,t=getTrack(c,lang),direction=chooseDirection(t);
   currentTask.direction=direction;
-  const cached=await loadPack(c,{cloud:false});
+  const cached=await loadPack(c,{cloud:true});
   currentTask.pack=cached;
   const target=packTarget(cached,c,lang),zh=cueMeaning(c,cached);
   $('#studyProgress').textContent=`${qi+1} / ${queue.length}`;
