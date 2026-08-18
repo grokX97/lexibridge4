@@ -735,9 +735,9 @@ function buildStudyQueue(){
   const concepts=newConcepts();
   const langs=enabledLangs();
   const fresh=[];
-  for(let li=0;li<langs.length;li++){
-    for(let i=0;i<concepts.length;i++)fresh.push({card:concepts[(i+li)%concepts.length],lang:langs[li],due:Infinity,newConcept:true});
-  }
+  for(let i=0;i<concepts.length;i++){
+  for(let li=0;li<langs.length;li++)fresh.push({card:concepts[(i+li)%concepts.length],lang:langs[li],due:Infinity,newConcept:true});
+}
   return [...due,...fresh];
 }
 function startStudy(){
@@ -801,23 +801,29 @@ function meaningHTML(c,pack=null){
   };
   return [['中文','zh','zh-CN'],['English','en','en-US'],['Deutsch','de','de-DE'],['Français','fr','fr-FR']].map(([label,k,locale])=>`<div class="meaningBox"><header><label>${label}</label>${k==='zh'?'':`<button class="miniSpeak dynSpeak" type="button" data-speak="${esc(values[k])}" data-lang="${locale}">🔊</button>`}</header><p>${esc(values[k])}</p></div>`).join('');
 }
+function studyMeaningHTML(c,pack,lang){
+  const zh=pack?.concept?.zh||c.meaning.zh;
+  const target=packTarget(pack,c,lang);
+  return `<div class="meaningBox"><header><label>中文语义</label></header><p>${esc(zh)}</p></div><div class="meaningBox"><header><label>${LANG_META[lang].name}</label><button class="miniSpeak dynSpeak" type="button" data-speak="${esc(target)}" data-lang="${LANG_META[lang].locale}">🔊</button></header><p>${esc(target)}</p></div>`;
+}
 function bindDynamicSpeech(root=document){root.querySelectorAll('.dynSpeak').forEach(b=>b.onclick=()=>speakText(b.dataset.speak,b.dataset.lang));}
 function renderStudyRich(pack,c){
   if(!pack){
-    $('#studyAiPanel').innerHTML='<div class="aiMini"><h3>基础词义已显示</h3><p>启用 AI 后可补充三语词形、词族、同义词、核心搭配和四语平行例句。</p><button class="secondary full" type="button" id="studyGenerateBtn">生成四语学习包</button></div>';
+    $('#studyAiPanel').innerHTML='<div class="aiMini"><h3>基础答案已显示</h3><p>启用 AI 后可生成三语词形、词族、同义词、核心搭配和四语平行例句。完整四语对照放在主动回忆之后查看，避免提前泄露另外两种语言的答案。</p><button class="secondary full" type="button" id="studyGenerateBtn">生成四语学习包</button></div>';
     $('#studyGenerateBtn')?.addEventListener('click',async()=>{try{await ensureAiAuth();await ensureStudyPack(c);}catch(err){toast(err.message);}});
     return;
   }
-  const cols=(pack.collocations||[]).slice(0,3).map(x=>`<p><b>${esc(x.functionZh||x.zh)}</b><br>${esc(x.en)} · ${esc(x.de)} · ${esc(x.fr)}</p>`).join('');
+  const lang=currentTask?.lang||'en';
+  const cols=(pack.collocations||[]).slice(0,3).map(x=>`<p><b>${esc(x.functionZh||x.zh)}</b><br>${esc(x.zh)} → ${esc(x[lang])}</p>`).join('');
   const ex=pack.examples?.[0];
-  $('#studyAiPanel').innerHTML=`<div class="aiMini"><h3>${pack.audit?.reviewed?'双重校对学习包':'AI 学习包'} · 核心预览</h3>${cols}${ex?`<p><b>${esc(ex.scenarioZh||'平行例句')}</b><br>${esc(ex.en)}<br>${esc(ex.de)}<br>${esc(ex.fr)}</p>`:''}</div>`;
+  $('#studyAiPanel').innerHTML=`<div class="aiMini"><h3>${pack.audit?.reviewed?'双重校对学习包':'AI 学习包'} · ${LANG_META[lang].name} 预览</h3><p>先完成这一语言的回忆；完整中英德法对照请打开词卡。</p>${cols}${ex?`<p><b>${esc(ex.scenarioZh||'平行例句')}</b><br>${esc(ex.zh)}<br>${esc(ex[lang])}</p>`:''}</div>`;
 }
 async function revealStudy(){
   if(!currentTask)return;
   const {card:c,lang,pack}=currentTask;
   const target=packTarget(pack,c,lang);
   $('#targetAnswer').textContent=target;$('#answerSpeakBtn').onclick=()=>speakText(target,LANG_META[lang].locale);
-  $('#studyMeaningGrid').innerHTML=meaningHTML(c,pack);
+  $('#studyMeaningGrid').innerHTML=studyMeaningHTML(c,pack,lang);
   bindDynamicSpeech($('#studyMeaningGrid'));
   renderStudyRich(pack,c);
   $('#answer').classList.remove('hidden');$('#revealBtn').classList.add('hidden');
