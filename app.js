@@ -11,7 +11,7 @@
   const defaultState = () => ({settings:{dailyNew:12,reviewCap:120,startRank:2501,masterReps:5,masterDays:30,theme:'system'},progress:{},reviews:0,version:2});
   let state = loadState();
   let cards = [];
-  let queue = [], qi = 0, current = null, activeBand='all';
+  let queue = [], qi = 0, current = null, activeBand='all', searchLimit=100;
 
   function loadState(){
     try { const x=JSON.parse(localStorage.getItem(STORE)); return x && x.progress ? {...defaultState(),...x,settings:{...defaultState().settings,...x.settings}} : defaultState(); }
@@ -38,7 +38,7 @@
     $('#startBtn').disabled = cards.length===0;
     renderHome();
   }
-  function switchView(id){ $$('.view').forEach(v=>v.classList.toggle('active',v.id===id)); window.scrollTo({top:0,behavior:'instant'}); if(id==='browseView') renderSearch(); if(id==='statsView') renderStats(); if(id==='settingsView') loadSettingsUI(); }
+  function switchView(id){ $$('.view').forEach(v=>v.classList.toggle('active',v.id===id)); window.scrollTo({top:0,behavior:'instant'}); if(id==='browseView'){searchLimit=100;renderSearch();} if(id==='statsView') renderStats(); if(id==='settingsView') loadSettingsUI(); }
   function progressStats(){
     let seen=0, mastered=0, known=0;
     for(const p of Object.values(state.progress)){ if(p.reviews||p.known) seen++; if(p.mastered) mastered++; if(p.known) known++; }
@@ -86,8 +86,13 @@
     const q=$('#searchInput').value.trim().toLocaleLowerCase();
     let arr=cards.filter(c=>activeBand==='all'||c.band.id===activeBand);
     if(q) arr=arr.filter(c=>[c.en,c.meaning.en,c.meaning.zh,c.meaning.de,c.meaning.fr].some(x=>String(x).toLocaleLowerCase().includes(q)));
-    arr=arr.slice(0,80); const box=$('#searchResults');
-    box.innerHTML=arr.length?arr.map(c=>`<article class="resultCard"><div><span class="rank">#${c.rank}</span><b>${esc(c.en)}</b><small>${esc(c.pos)} · ${esc(c.level)} · ${esc(c.band.label)}</small></div><div class="langs"><span>中 ${esc(c.meaning.zh)}</span><span>DE ${esc(c.meaning.de)}</span><span>FR ${esc(c.meaning.fr)}</span></div></article>`).join(''):'<div class="empty">没有匹配结果</div>';
+    const total=arr.length, visible=arr.slice(0,searchLimit), box=$('#searchResults');
+    if(!total){ box.innerHTML='<div class="empty">没有匹配结果</div>'; return; }
+    const summary=`<div class="buildState" style="margin:2px 0 4px">共 ${total.toLocaleString()} 个结果 · 已显示 ${visible.length.toLocaleString()}</div>`;
+    const list=visible.map(c=>`<article class="resultCard"><div><span class="rank">#${c.rank}</span><b>${esc(c.en)}</b><small>${esc(c.pos)} · ${esc(c.level)} · ${esc(c.band.label)}</small></div><div class="langs"><span>中 ${esc(c.meaning.zh)}</span><span>DE ${esc(c.meaning.de)}</span><span>FR ${esc(c.meaning.fr)}</span></div></article>`).join('');
+    const more=visible.length<total?`<button class="secondary full" id="loadMoreBtn" style="margin:8px 0 24px">继续加载（剩余 ${(total-visible.length).toLocaleString()}）</button>`:'';
+    box.innerHTML=summary+list+more;
+    $('#loadMoreBtn')?.addEventListener('click',()=>{searchLimit=Math.min(total,searchLimit+100);renderSearch();});
   }
   function renderStats(){
     const s=progressStats(); $('#statSeen').textContent=s.seen; $('#statMastered').textContent=s.mastered; $('#statReviews').textContent=state.reviews||0; $('#statKnown').textContent=s.known;
@@ -108,7 +113,7 @@
     $$('[data-view]').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
     $('#startBtn').addEventListener('click',startStudy); $('#revealBtn').addEventListener('click',reveal); $('#endStudy').addEventListener('click',()=>{switchView('homeView');renderHome();});
     $$('.rating button').forEach(b=>b.addEventListener('click',()=>rate(b.dataset.rate))); $('#knownCurrent').addEventListener('click',()=>markKnown()); $('#quickKnown').addEventListener('click',markFoundation);
-    $('#searchInput').addEventListener('input',renderSearch); $$('.chip').forEach(b=>b.addEventListener('click',()=>{activeBand=b.dataset.band; $$('.chip').forEach(x=>x.classList.toggle('active',x===b));renderSearch();}));
+    $('#searchInput').addEventListener('input',()=>{searchLimit=100;renderSearch();}); $$('.chip').forEach(b=>b.addEventListener('click',()=>{activeBand=b.dataset.band;searchLimit=100;$$('.chip').forEach(x=>x.classList.toggle('active',x===b));renderSearch();}));
     $('#saveSettings').addEventListener('click',saveSettingsUI); $('#exportBtn').addEventListener('click',exportData); $('#importInput').addEventListener('change',e=>e.target.files[0]&&importData(e.target.files[0]));
     $('#resetBtn').addEventListener('click',()=>{if(confirm('确定清空所有学习记录？词库不会删除。')){state=defaultState();saveState();applyTheme();renderHome();toast('学习记录已清空');}});
     $('#themeBtn').addEventListener('click',toggleTheme); $$('[data-target][data-lang]').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.target,b.dataset.lang)));
