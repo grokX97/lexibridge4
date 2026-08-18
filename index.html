@@ -38,7 +38,7 @@
     <button class="navcard" type="button" data-view="statsView"><b>▥</b><span>学习统计</span><small>复习量与最近学习</small></button>
     <button class="navcard" type="button" data-view="settingsView"><b>⚙</b><span>学习设置</span><small>新词量、复习与起点</small></button>
   </div>
-  <div class="card qualityCard"><div><h2>内容质量</h2><p id="qualitySummary">正在核验四语语义对齐。词卡会区分词网自然例句与结构化语境，不把自动补全冒充人工审校。</p></div><button class="secondary compact" type="button" data-view="browseView">抽查</button></div>
+  <div class="card qualityCard"><div><h2>内容质量</h2><p id="qualitySummary">词义卡按需检索 Tatoeba 人类自然语料，只显示可追溯的搭配与例句；证据不足时明确留空，不再用模板句补位。</p></div><button class="secondary compact" type="button" data-view="browseView">抽查</button></div>
 </section>
 
 <section id="studyView" class="view">
@@ -51,7 +51,7 @@
     <button class="primary reveal" type="button" id="revealBtn">显示答案</button>
     <div id="answer" class="answer hidden">
       <div class="meaningGrid" id="studyMeaningGrid"></div>
-      <section class="usageBlock"><div class="blockTitle"><h2>常用搭配 / 相关表达</h2><span id="studyUsageSource"></span></div><div class="quadList" id="studyPhrases"></div></section>
+      <section class="usageBlock"><div class="blockTitle"><h2>真实语料搭配 / 相关表达</h2><span id="studyUsageSource"></span></div><div class="quadList" id="studyPhrases"></div></section>
       <section class="usageBlock"><div class="blockTitle"><h2>四语例句</h2><span id="studyExampleSource"></span></div><div class="quadList examples" id="studyExamples"></div></section>
       <button class="linkButton" type="button" id="openStudyDetail">查看完整词卡与学习记录</button>
       <div class="rating"><button type="button" data-rate="again"><b>忘记</b><small>约 10 分钟</small></button><button type="button" data-rate="hard"><b>困难</b><small>短间隔</small></button><button type="button" data-rate="good"><b>记得</b><small>正常间隔</small></button><button type="button" data-rate="easy"><b>熟练</b><small>长间隔</small></button></div>
@@ -83,7 +83,7 @@
   <div class="card settings"><label>每天新词 <input id="dailyNew" type="number" min="0" max="100"></label><label>每天最多复习 <input id="reviewCap" type="number" min="10" max="500"></label><label>新词起点 <select id="startBand"><option value="1">完整 10,000（从核心开始）</option><option value="2501">从中高级 2,501 开始</option><option value="5001">从学术扩展 5,001 开始</option><option value="8001">从高级拓展 8,001 开始</option></select></label><label>掌握至少成功次数 <input id="masterReps" type="number" min="3" max="20"></label><label>掌握所需长期间隔（天） <input id="masterDays" type="number" min="14" max="180"></label><label>每页显示 <select id="pageSize"><option value="40">40 个</option><option value="80">80 个</option><option value="120">120 个</option></select></label><button class="primary full" type="button" id="saveSettings">保存设置</button></div>
   <div class="card settings"><h2>基础词批量状态</h2><p class="settingNote">只标记尚无个人复习记录的核心 2,500 词，可撤销。</p><button class="secondary full" type="button" id="foundationToggle">将核心 2,500 词标记为已会</button></div>
   <div class="card settings"><h2>数据与迁移</h2><button class="secondary full" type="button" id="exportBtn">导出完整学习备份</button><label class="secondary full fileLabel">导入学习备份<input id="importInput" type="file" accept="application/json"></label><button class="danger full" type="button" id="resetBtn">清空学习记录</button></div>
-  <div class="card tiny"><b>词库说明</b><p>严格版词库只接受同一 WordNet/ILI 概念下同时存在中、英、德、法对应词的卡片；词网没有自然例句时会显示明确标注的结构化语境。</p></div>
+  <div class="card tiny"><b>词库说明</b><p>词义采用同一 WordNet/ILI 概念的中英德法对齐；搭配和例句打开词卡后从 Tatoeba 检索并缓存。没有足够证据时直接标注缺失，不生成模板内容。</p></div>
 </section>
 </main>
 
@@ -94,7 +94,7 @@
       <div class="badges" id="detailBadges"></div>
       <div class="detailActions"><button class="speakPill" type="button" data-lang="en-US" data-target="detailWord">🔊 English</button><button class="speakPill" type="button" id="speakGerman">🔊 Deutsch</button><button class="speakPill" type="button" id="speakFrench">🔊 Français</button></div>
       <div class="meaningGrid" id="detailMeaningGrid"></div>
-      <section class="usageBlock"><div class="blockTitle"><h2>常用搭配 / 相关表达</h2><span id="detailUsageSource"></span></div><div class="quadList" id="detailPhrases"></div></section>
+      <section class="usageBlock"><div class="blockTitle"><h2>真实语料搭配 / 相关表达</h2><span id="detailUsageSource"></span></div><div class="quadList" id="detailPhrases"></div></section>
       <section class="usageBlock"><div class="blockTitle"><h2>四语例句</h2><span id="detailExampleSource"></span></div><div class="quadList examples" id="detailExamples"></div></section>
       <section class="progressPanel"><h2>学习记录</h2><div id="detailProgress"></div></section>
       <div class="dialogButtons"><button class="secondary" type="button" id="detailKnownBtn">标记原本已会</button><button class="secondary" type="button" id="detailRelearnBtn">重新加入复习</button><button class="danger" type="button" id="detailResetBtn">重置这个词的学习记录</button></div>
