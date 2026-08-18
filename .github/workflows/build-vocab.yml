@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - scripts/build_vocab.py
+      - requirements.txt
       - .github/workflows/build-vocab.yml
 
 permissions:
@@ -28,10 +29,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
 
       - name: Install lexical tooling
-        run: python -m pip install --upgrade 'wn==1.1.0' 'word2word==1.0.0' requests wget
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip check
 
       - name: Build exactly 10,000 complete EN/ZH/DE/FR cards
         run: python scripts/build_vocab.py
@@ -39,7 +44,7 @@ jobs:
       - name: Validate generated corpus
         run: |
           python - <<'PY'
-          import json, pathlib, re
+          import json, pathlib
           audit=json.loads(pathlib.Path('vocab/BUILD_AUDIT.json').read_text())
           assert audit['cards']==10000, audit
           assert audit['uniqueEnglish']==10000, audit
