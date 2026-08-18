@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f7fb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LexiBridge">
+<title>LexiBridge 4 · 英德法四语词汇</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div><div class="brand">LexiBridge <b>4</b></div><div class="subtitle">English · 中文 · Deutsch · Français</div></div>
+  <button class="iconbtn" id="themeBtn" aria-label="切换主题">◐</button>
+</header>
+
+<main>
+<section id="homeView" class="view active">
+  <div class="hero card">
+    <div class="eyebrow">今日学习</div>
+    <div class="heroRow"><div><strong id="todayDue">—</strong><span>待复习</span></div><div><strong id="todayNew">—</strong><span>新词</span></div><div><strong id="mastered">—</strong><span>已掌握</span></div></div>
+    <button class="primary big" id="startBtn">开始今日学习</button>
+    <div class="buildState" id="buildState">正在读取 10,000 词库…</div>
+  </div>
+  <div class="grid2">
+    <button class="navcard" data-view="browseView"><b>⌕</b><span>词库检索</span><small>中英德法搜索</small></button>
+    <button class="navcard" data-view="statsView"><b>▥</b><span>学习统计</span><small>进度与复习量</small></button>
+    <button class="navcard" data-view="settingsView"><b>⚙</b><span>学习设置</span><small>新词与复习策略</small></button>
+    <button class="navcard" id="quickKnown"><b>✓</b><span>基础词已会</span><small>跳过核心 2,500</small></button>
+  </div>
+  <div class="card about">
+    <h3>学习原则</h3>
+    <p>先主动回忆英语含义，再揭示中文语义校准与德语、法语对应。到期复习优先于新词；只有多次成功且复习间隔达到长期阈值，才计为正式掌握。</p>
+  </div>
+</section>
+
+<section id="studyView" class="view">
+  <div class="studyHead"><button class="back" data-view="homeView">‹</button><div><b id="studyProgress">0 / 0</b><small id="queueLabel">今日队列</small></div><button class="textbtn" id="endStudy">结束</button></div>
+  <div class="progress"><i id="progressBar"></i></div>
+  <article class="wordcard" id="wordCard">
+    <div class="badges"><span id="bandBadge"></span><span id="posBadge"></span><span id="qualityBadge"></span></div>
+    <div class="wordLine"><h1 id="wordEn">—</h1><button class="speak" data-lang="en-US" data-target="wordEn">🔊</button></div>
+    <div class="prompt" id="recallPrompt">先回忆：它在这个词义下是什么意思？德语、法语你能说出来吗？</div>
+    <button class="primary reveal" id="revealBtn">显示答案</button>
+    <div id="answer" class="answer hidden">
+      <div class="meaningGrid">
+        <div><label>中文</label><p id="meaningZh"></p></div>
+        <div><label>English</label><p id="meaningEn"></p></div>
+        <div><label>Deutsch <button class="miniSpeak" data-lang="de-DE" data-target="meaningDe">🔊</button></label><p id="meaningDe"></p></div>
+        <div><label>Français <button class="miniSpeak" data-lang="fr-FR" data-target="meaningFr">🔊</button></label><p id="meaningFr"></p></div>
+      </div>
+      <div class="context"><h3>短语 / 语境</h3><p><b>EN</b> <span id="phraseEn"></span></p><p><b>中</b> <span id="phraseZh"></span></p><p><b>DE</b> <span id="phraseDe"></span></p><p><b>FR</b> <span id="phraseFr"></span></p></div>
+      <div class="context"><h3>例句 / 释义语境</h3><p><b>EN</b> <span id="exampleEn"></span></p><p><b>中</b> <span id="exampleZh"></span></p><p><b>DE</b> <span id="exampleDe"></span></p><p><b>FR</b> <span id="exampleFr"></span></p></div>
+      <div class="rating"><button data-rate="again"><b>忘记</b><small>稍后再来</small></button><button data-rate="hard"><b>困难</b><small>短间隔</small></button><button data-rate="good"><b>记得</b><small>正常间隔</small></button><button data-rate="easy"><b>熟练</b><small>长间隔</small></button></div>
+      <button class="secondary full" id="knownCurrent">这个词我本来就会</button>
+    </div>
+  </article>
+</section>
+
+<section id="browseView" class="view">
+  <div class="sectionHead"><button class="back" data-view="homeView">‹</button><h2>词库检索</h2><span></span></div>
+  <input class="search" id="searchInput" placeholder="搜索 English / 中文 / Deutsch / Français">
+  <div class="filters"><button class="chip active" data-band="all">全部</button><button class="chip" data-band="core">核心</button><button class="chip" data-band="upper">中高级</button><button class="chip" data-band="academic">学术</button><button class="chip" data-band="advanced">高级</button></div>
+  <div id="searchResults" class="results"></div>
+</section>
+
+<section id="statsView" class="view">
+  <div class="sectionHead"><button class="back" data-view="homeView">‹</button><h2>学习统计</h2><span></span></div>
+  <div class="statsGrid"><div class="card"><strong id="statSeen">0</strong><span>已接触</span></div><div class="card"><strong id="statMastered">0</strong><span>已掌握</span></div><div class="card"><strong id="statReviews">0</strong><span>累计复习</span></div><div class="card"><strong id="statKnown">0</strong><span>标记已会</span></div></div>
+  <div class="card"><h3>未来 7 天到期量</h3><div id="forecast" class="forecast"></div></div>
+</section>
+
+<section id="settingsView" class="view">
+  <div class="sectionHead"><button class="back" data-view="homeView">‹</button><h2>设置</h2><span></span></div>
+  <div class="card settings">
+    <label>每天新词 <input id="dailyNew" type="number" min="0" max="100"></label>
+    <label>每天最多复习 <input id="reviewCap" type="number" min="10" max="500"></label>
+    <label>新词起点 <select id="startBand"><option value="1">完整 10,000（从核心开始）</option><option value="2501">从中高级 2,501 开始</option><option value="5001">从学术扩展 5,001 开始</option><option value="8001">从高级拓展 8,001 开始</option></select></label>
+    <label>掌握至少成功次数 <input id="masterReps" type="number" min="3" max="20"></label>
+    <label>掌握所需长期间隔（天） <input id="masterDays" type="number" min="14" max="180"></label>
+    <button class="primary full" id="saveSettings">保存设置</button>
+  </div>
+  <div class="card settings"><h3>数据</h3><button class="secondary full" id="exportBtn">导出完整学习备份</button><label class="secondary full fileLabel">导入学习备份<input id="importInput" type="file" accept="application/json"></label><button class="danger full" id="resetBtn">清空学习记录</button></div>
+  <div class="card tiny"><b>词库来源</b><p>Open English WordNet、Open German WordNet (OdeNet)、Open Multilingual Wordnet/WOLF、Chinese Open Wordnet；频率排序参考 FrequencyWords。自动构建时只收录拥有中、英、德、法概念对齐的词义。</p></div>
+</section>
+</main>
+
+<div class="toast" id="toast"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
