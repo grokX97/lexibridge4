@@ -2,20 +2,24 @@
   "cards": 10000,
   "uniqueEnglish": 10000,
   "shards": 10,
-  "frequencyRanked": 7179,
+  "schema": 3,
+  "canonicalEnglishLemmas": true,
+  "surfaceFormsCanonicalized": 22,
   "strictSameConceptAllFourLanguages": true,
   "independentBilingualFallbacks": false,
-  "strictMissesBeforeTarget": 83295,
-  "naturalEnglishExampleCards": 5072,
+  "translationHeadFrequencyRankedWithinSameConcept": true,
+  "strictMissesBeforeTarget": 92638,
+  "frequencyRanked": 6709,
+  "naturalEnglishExampleCards": 4886,
   "naturalZhExampleCards": 0,
-  "naturalDeExampleCards": 510,
+  "naturalDeExampleCards": 475,
   "naturalFrExampleCards": 0,
   "sources": [
     "omw-en:1.4",
     "omw-cmn:1.4",
     "omw-fr:1.4",
     "odenet:1.4",
-    "FrequencyWords"
+    "FrequencyWords EN/ZH/DE/FR"
   ],
-  "seconds": 126.4
+  "seconds": 168.9
 }
