@@ -1,0 +1,78 @@
+name: Interleave LexiBridge study v9
+
+on:
+  push:
+    paths:
+      - .release-v9-interleave
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Separate active recall from four-language comparison
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app.js')
+          s=p.read_text(encoding='utf-8')
+
+          old="""  for(let li=0;li<langs.length;li++){
+            for(let i=0;i<concepts.length;i++)fresh.push({card:concepts[(i+li)%concepts.length],lang:langs[li],due:Infinity,newConcept:true});
+          }
+          """
+          new="""  for(let i=0;i<concepts.length;i++){
+            for(let li=0;li<langs.length;li++)fresh.push({card:concepts[(i+li)%concepts.length],lang:langs[li],due:Infinity,newConcept:true});
+          }
+          """
+          if old not in s: raise SystemExit('study queue block missing')
+          s=s.replace(old,new)
+
+          marker="""function bindDynamicSpeech(root=document){root.querySelectorAll('.dynSpeak').forEach(b=>b.onclick=()=>speakText(b.dataset.speak,b.dataset.lang));}
+          """
+          inserted="""function studyMeaningHTML(c,pack,lang){
+            const zh=pack?.concept?.zh||c.meaning.zh;
+            const target=packTarget(pack,c,lang);
+            return `<div class=\"meaningBox\"><header><label>中文语义</label></header><p>${esc(zh)}</p></div><div class=\"meaningBox\"><header><label>${LANG_META[lang].name}</label><button class=\"miniSpeak dynSpeak\" type=\"button\" data-speak=\"${esc(target)}\" data-lang=\"${LANG_META[lang].locale}\">🔊</button></header><p>${esc(target)}</p></div>`;
+          }
+          function bindDynamicSpeech(root=document){root.querySelectorAll('.dynSpeak').forEach(b=>b.onclick=()=>speakText(b.dataset.speak,b.dataset.lang));}
+          """
+          if marker not in s: raise SystemExit('speech marker missing')
+          s=s.replace(marker,inserted)
+
+          start=s.index('function renderStudyRich(pack,c){')
+          end=s.index('async function revealStudy(){',start)
+          new_render="""function renderStudyRich(pack,c){
+            if(!pack){
+              $('#studyAiPanel').innerHTML='<div class=\"aiMini\"><h3>基础答案已显示</h3><p>启用 AI 后可生成三语词形、词族、同义词、核心搭配和四语平行例句。完整四语对照放在主动回忆之后查看，避免提前泄露另外两种语言的答案。</p><button class=\"secondary full\" type=\"button\" id=\"studyGenerateBtn\">生成四语学习包</button></div>';
+              $('#studyGenerateBtn')?.addEventListener('click',async()=>{try{await ensureAiAuth();await ensureStudyPack(c);}catch(err){toast(err.message);}});
+              return;
+            }
+            const lang=currentTask?.lang||'en';
+            const cols=(pack.collocations||[]).slice(0,3).map(x=>`<p><b>${esc(x.functionZh||x.zh)}</b><br>${esc(x.zh)} → ${esc(x[lang])}</p>`).join('');
+            const ex=pack.examples?.[0];
+            $('#studyAiPanel').innerHTML=`<div class=\"aiMini\"><h3>${pack.audit?.reviewed?'双重校对学习包':'AI 学习包'} · ${LANG_META[lang].name} 预览</h3><p>先完成这一语言的回忆；完整中英德法对照请打开词卡。</p>${cols}${ex?`<p><b>${esc(ex.scenarioZh||'平行例句')}</b><br>${esc(ex.zh)}<br>${esc(ex[lang])}</p>`:''}</div>`;
+          }
+          """
+          s=s[:start]+new_render+s[end:]
+          s=s.replace("$('#studyMeaningGrid').innerHTML=meaningHTML(c,pack);", "$('#studyMeaningGrid').innerHTML=studyMeaningHTML(c,pack,lang);")
+          p.write_text(s,encoding='utf-8')
+          PY
+          node --check app.js
+          grep -q 'studyMeaningHTML' app.js
+          grep -q '完整四语对照放在主动回忆之后' app.js
+
+      - name: Commit and remove one-shot files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js
+          git rm .release-v9-interleave .github/workflows/interleave-study-v9.yml
+          git commit -m 'Interleave target languages and prevent answer leakage during recall'
+          git push
