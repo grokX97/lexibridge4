@@ -3,7 +3,7 @@ name: Assemble LexiBridge corpus app v8
 on:
   push:
     paths:
-      - app_parts/READY
+      - app_gzparts/READY
 
 permissions:
   contents: write
@@ -23,7 +23,7 @@ jobs:
 
       - name: Assemble and validate app
         run: |
-          cat app_parts/part-*.b64 | tr -d '\n' | base64 --decode > app.js
+          cat app_gzparts/gz-*.b64 | tr -d '\n' | base64 --decode | gunzip > app.js
           node --check app.js
           grep -q "Tatoeba 人类自然语料" app.js
           grep -q "没有用模板短语补位" app.js
@@ -60,7 +60,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app.js index.html sw.js
-          git rm -r app_parts
+          git rm -r app_parts app_gzparts
           git rm .github/workflows/assemble-app-v8.yml
           git commit -m 'Ship evidence-based natural corpus vocabulary content'
           git push
