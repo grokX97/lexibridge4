@@ -1,174 +1,110 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f4f6fb">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="LexiBridge">
-  <meta name="format-detection" content="telephone=no">
-  <title>LexiBridge 4 · 英中德法词汇</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f6fb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LexiBridge">
+<meta name="format-detection" content="telephone=no">
+<title>LexiBridge 4 · 英中德法词汇</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 <div id="app">
-  <header class="topbar">
-    <button class="brandButton" type="button" data-view="homeView" aria-label="返回首页">
-      <span class="brand">LexiBridge <b>4</b></span>
-      <span class="subtitle">English · 中文 · Deutsch · Français</span>
-    </button>
-    <div class="topActions">
-      <button class="iconbtn" id="updateBtn" type="button" aria-label="检查更新" title="检查更新">↻</button>
-      <button class="iconbtn" id="themeBtn" type="button" aria-label="切换主题" title="切换主题">◐</button>
+<header class="topbar">
+  <button class="brandButton" type="button" data-view="homeView"><span class="brand">LexiBridge <b>4</b></span><span class="subtitle">English · 中文 · Deutsch · Français</span></button>
+  <div class="topActions"><button class="iconbtn" id="updateBtn" type="button" aria-label="检查更新">↻</button><button class="iconbtn" id="themeBtn" type="button" aria-label="切换主题">◐</button></div>
+</header>
+
+<main>
+<section id="homeView" class="view active">
+  <div class="hero card">
+    <div class="eyebrow">今日学习</div>
+    <div class="metricRow">
+      <button class="metric" type="button" data-open-status="due"><strong id="todayDue">—</strong><span>待复习</span></button>
+      <button class="metric" type="button" data-open-status="new"><strong id="todayNew">—</strong><span>今日新词</span></button>
+      <button class="metric" type="button" data-open-status="mastered"><strong id="mastered">—</strong><span>已掌握</span></button>
+      <button class="metric" type="button" data-open-status="learning"><strong id="learningCount">—</strong><span>学习中</span></button>
     </div>
-  </header>
-
-  <main>
-    <section id="homeView" class="view active" aria-labelledby="homeTitle">
-      <h1 class="srOnly" id="homeTitle">LexiBridge 首页</h1>
-      <div class="hero card">
-        <div class="eyebrow">今日学习</div>
-        <div class="metricRow">
-          <button class="metric" type="button" data-open-status="due"><strong id="todayDue">—</strong><span>待复习</span></button>
-          <button class="metric" type="button" data-open-status="new"><strong id="todayNew">—</strong><span>今日新词</span></button>
-          <button class="metric" type="button" data-open-status="mastered"><strong id="mastered">—</strong><span>已掌握</span></button>
-          <button class="metric" type="button" data-open-status="learning"><strong id="learningCount">—</strong><span>学习中</span></button>
-        </div>
-        <button class="primary big" id="startBtn" type="button" disabled>开始今日学习</button>
-        <div class="buildState" id="buildState" role="status">正在读取 10,000 词库…</div>
-      </div>
-
-      <div class="grid2">
-        <button class="navcard" type="button" data-view="browseView"><b>⌕</b><span>完整词库</span><small>搜索、筛选与查看详情</small></button>
-        <button class="navcard" type="button" data-open-status="mastered"><b>✓</b><span>已掌握词</span><small>随时回看并撤销状态</small></button>
-        <button class="navcard" type="button" data-view="statsView"><b>▥</b><span>学习统计</span><small>进度、复习和未来负荷</small></button>
-        <button class="navcard" type="button" data-view="settingsView"><b>⚙</b><span>学习设置</span><small>每日数量与掌握规则</small></button>
-      </div>
-
-      <div class="card qualityCard">
-        <div><h2>词卡内容标准</h2><p>每张卡均显示四语词义、四语搭配/用法框架和四语例句；语料例句、人工精修与结构化补全会明确标注，不把自动内容伪装成人工校订。</p></div>
-        <button class="secondary compact" type="button" data-view="browseView">抽查词库</button>
-      </div>
-    </section>
-
-    <section id="studyView" class="view" aria-labelledby="studyWord">
-      <div class="studyHead">
-        <button class="back" type="button" data-view="homeView" aria-label="返回首页">‹</button>
-        <div><b id="studyProgress">0 / 0</b><small id="queueLabel">今日队列</small></div>
-        <button class="textbtn" type="button" id="endStudy">结束</button>
-      </div>
-      <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
-      <article class="wordcard" id="wordCard">
-        <div class="badges"><span id="bandBadge"></span><span id="posBadge"></span><span id="qualityBadge"></span><span id="statusBadge"></span></div>
-        <div class="wordLine"><h1 id="studyWord">—</h1><button class="speak" type="button" data-lang="en-US" data-target="studyWord" aria-label="朗读英语">🔊</button></div>
-        <div class="prompt" id="recallPrompt">先主动回忆它在当前词义下的含义，再尝试说出德语和法语对应词。</div>
-        <button class="primary reveal" type="button" id="revealBtn">显示答案</button>
-        <div id="answer" class="answer hidden">
-          <div class="meaningGrid" id="studyMeaningGrid"></div>
-          <section class="usageBlock"><div class="blockTitle"><h2>搭配与用法</h2><span id="studyUsageSource"></span></div><div class="quadList" id="studyPhrases"></div></section>
-          <section class="usageBlock"><div class="blockTitle"><h2>四语例句</h2><span id="studyExampleSource"></span></div><div class="quadList examples" id="studyExamples"></div></section>
-          <button class="linkButton" type="button" id="openStudyDetail">查看完整词卡与学习记录</button>
-          <div class="rating" aria-label="本次记忆评分">
-            <button type="button" data-rate="again"><b>忘记</b><small>约 10 分钟</small></button>
-            <button type="button" data-rate="hard"><b>困难</b><small>较短间隔</small></button>
-            <button type="button" data-rate="good"><b>记得</b><small>正常间隔</small></button>
-            <button type="button" data-rate="easy"><b>熟练</b><small>较长间隔</small></button>
-          </div>
-          <button class="secondary full" type="button" id="knownCurrent">这个词我原本就会</button>
-        </div>
-      </article>
-    </section>
-
-    <section id="browseView" class="view" aria-labelledby="browseTitle">
-      <div class="sectionHead"><button class="back" type="button" data-view="homeView" aria-label="返回首页">‹</button><h1 id="browseTitle">完整词库</h1><button class="textbtn" type="button" id="resetFilters">重置</button></div>
-      <div class="searchShell">
-        <span aria-hidden="true">⌕</span>
-        <input class="search" id="searchInput" inputmode="search" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="搜索单词、变形、释义、德语或法语">
-        <button type="button" id="clearSearch" aria-label="清除搜索">×</button>
-      </div>
-      <p class="searchHelp" id="searchHelp">支持词形还原与模糊匹配，例如输入 contaminated 也能找到 contaminate。</p>
-
-      <div class="filterScroller" aria-label="词库层级筛选">
-        <button class="chip active" type="button" data-band="all">全部层级</button>
-        <button class="chip" type="button" data-band="core">核心</button>
-        <button class="chip" type="button" data-band="upper">中高级</button>
-        <button class="chip" type="button" data-band="academic">学术</button>
-        <button class="chip" type="button" data-band="advanced">高级</button>
-      </div>
-      <div class="filterRow">
-        <label>状态<select id="statusFilter"><option value="all">全部状态</option><option value="new">未学习</option><option value="learning">学习中</option><option value="due">到期</option><option value="mastered">已掌握</option><option value="known">原本已会</option><option value="favorite">收藏</option></select></label>
-        <label>词性<select id="posFilter"><option value="all">全部词性</option><option value="noun">名词</option><option value="verb">动词</option><option value="adjective">形容词</option><option value="adverb">副词</option><option value="phrase">短语</option></select></label>
-        <label>排序<select id="sortFilter"><option value="relevance">相关度 / 词频</option><option value="rank">词频序</option><option value="alpha">字母序</option><option value="recent">最近学习</option></select></label>
-      </div>
-
-      <div class="resultMeta"><span id="resultSummary">正在准备词库…</span><button class="linkButton inline" type="button" id="jumpRankBtn">跳到序号</button></div>
-      <div id="searchResults" class="results" aria-live="polite"></div>
-      <nav class="pager" id="pager" aria-label="搜索结果分页">
-        <button class="secondary" type="button" id="prevPage">上一页</button>
-        <button class="pageInfo" type="button" id="pageInfo">第 1 / 1 页</button>
-        <button class="secondary" type="button" id="nextPage">下一页</button>
-      </nav>
-    </section>
-
-    <section id="statsView" class="view" aria-labelledby="statsTitle">
-      <div class="sectionHead"><button class="back" type="button" data-view="homeView" aria-label="返回首页">‹</button><h1 id="statsTitle">学习统计</h1><span></span></div>
-      <div class="statsGrid">
-        <button class="card statCard" type="button" data-open-status="learning"><strong id="statSeen">0</strong><span>已接触</span></button>
-        <button class="card statCard" type="button" data-open-status="mastered"><strong id="statMastered">0</strong><span>已掌握</span></button>
-        <div class="card statCard"><strong id="statReviews">0</strong><span>累计评分</span></div>
-        <button class="card statCard" type="button" data-open-status="known"><strong id="statKnown">0</strong><span>原本已会</span></button>
-      </div>
-      <div class="card chartCard"><h2>未来 7 天到期量</h2><div id="forecast" class="forecast"></div></div>
-      <div class="card listCard"><div class="blockTitle"><h2>最近学习</h2><button class="linkButton inline" type="button" data-open-status="learning">查看全部</button></div><div id="recentList" class="miniList"></div></div>
-    </section>
-
-    <section id="settingsView" class="view" aria-labelledby="settingsTitle">
-      <div class="sectionHead"><button class="back" type="button" data-view="homeView" aria-label="返回首页">‹</button><h1 id="settingsTitle">设置</h1><span></span></div>
-      <div class="card settings">
-        <label>每天新词 <input id="dailyNew" type="number" min="0" max="100"></label>
-        <label>每天最多复习 <input id="reviewCap" type="number" min="10" max="500"></label>
-        <label>新词起点 <select id="startBand"><option value="1">完整 10,000（从核心开始）</option><option value="2501">从中高级 2,501 开始</option><option value="5001">从学术扩展 5,001 开始</option><option value="8001">从高级拓展 8,001 开始</option></select></label>
-        <label>掌握至少成功次数 <input id="masterReps" type="number" min="3" max="20"></label>
-        <label>掌握所需长期间隔（天） <input id="masterDays" type="number" min="14" max="180"></label>
-        <label>每页显示 <select id="pageSize"><option value="40">40 个</option><option value="80">80 个</option><option value="120">120 个</option></select></label>
-        <button class="primary full" type="button" id="saveSettings">保存设置</button>
-      </div>
-      <div class="card settings"><h2>基础词批量状态</h2><p class="settingNote">只标记尚无个人记录的核心 2,500 词；可撤销，不覆盖你已经做过的复习。</p><button class="secondary full" type="button" id="foundationToggle">将核心 2,500 词标记为已会</button></div>
-      <div class="card settings"><h2>数据与迁移</h2><button class="secondary full" type="button" id="exportBtn">导出完整学习备份</button><label class="secondary full fileLabel">导入学习备份<input id="importInput" type="file" accept="application/json"></label><button class="danger full" type="button" id="resetBtn">清空学习记录</button></div>
-      <div class="card tiny"><b>内容来源与质量</b><p>词义采用同一 WordNet 概念的中英德法对齐；人工精修、语料例句和结构化补全分级标注。词库会持续升级，但不会用无关双语翻译强行凑同一词义。</p></div>
-    </section>
-  </main>
-
-  <div class="dialogBackdrop hidden" id="detailBackdrop">
-    <section class="detailDialog" role="dialog" aria-modal="true" aria-labelledby="detailWord">
-      <header class="detailHeader"><button class="iconbtn" type="button" id="closeDetail" aria-label="关闭详情">×</button><div><small>完整词卡</small><h1 id="detailWord">—</h1></div><button class="iconbtn" type="button" id="favoriteBtn" aria-label="收藏">☆</button></header>
-      <div class="detailScroll">
-        <div class="badges" id="detailBadges"></div>
-        <div class="detailActions"><button class="speakPill" type="button" data-lang="en-US" data-target="detailWord">🔊 English</button><button class="speakPill" type="button" id="speakGerman">🔊 Deutsch</button><button class="speakPill" type="button" id="speakFrench">🔊 Français</button></div>
-        <div class="meaningGrid" id="detailMeaningGrid"></div>
-        <section class="usageBlock"><div class="blockTitle"><h2>搭配与用法</h2><span id="detailUsageSource"></span></div><div class="quadList" id="detailPhrases"></div></section>
-        <section class="usageBlock"><div class="blockTitle"><h2>四语例句</h2><span id="detailExampleSource"></span></div><div class="quadList examples" id="detailExamples"></div></section>
-        <section class="progressPanel"><h2>学习记录</h2><div id="detailProgress"></div></section>
-        <div class="dialogButtons"><button class="primary" type="button" id="detailQueueBtn">加入今日复习</button><button class="secondary" type="button" id="detailKnownBtn">标记为已会</button><button class="danger" type="button" id="detailResetBtn">重置此词记录</button></div>
-      </div>
-    </section>
+    <button class="primary big" id="startBtn" type="button" disabled>开始今日学习</button>
+    <div class="buildState" id="buildState">正在读取 10,000 词库…</div>
   </div>
+  <div class="grid2">
+    <button class="navcard" type="button" data-view="browseView"><b>⌕</b><span>完整词库</span><small>10,000 词分页、搜索与详情</small></button>
+    <button class="navcard" type="button" data-open-status="mastered"><b>✓</b><span>已掌握词</span><small>可回看、重学、撤销</small></button>
+    <button class="navcard" type="button" data-view="statsView"><b>▥</b><span>学习统计</span><small>复习量与最近学习</small></button>
+    <button class="navcard" type="button" data-view="settingsView"><b>⚙</b><span>学习设置</span><small>新词量、复习与起点</small></button>
+  </div>
+  <div class="card qualityCard"><div><h2>内容质量</h2><p id="qualitySummary">正在核验四语语义对齐。词卡会区分词网自然例句与结构化语境，不把自动补全冒充人工审校。</p></div><button class="secondary compact" type="button" data-view="browseView">抽查</button></div>
+</section>
 
-  <div class="toast" id="toast" role="status"></div>
+<section id="studyView" class="view">
+  <div class="studyHead"><button class="back" type="button" data-view="homeView">‹</button><div><b id="studyProgress">0 / 0</b><small id="queueLabel">今日队列</small></div><button class="textbtn" type="button" id="endStudy">结束</button></div>
+  <div class="progress"><i id="progressBar"></i></div>
+  <article class="wordcard">
+    <div class="badges"><span id="bandBadge"></span><span id="posBadge"></span><span id="qualityBadge"></span><span id="statusBadge"></span></div>
+    <div class="wordLine"><h1 id="studyWord">—</h1><button class="speak" type="button" data-lang="en-US" data-target="studyWord">🔊</button></div>
+    <div class="prompt">先主动回忆当前词义，再尝试说出中文、德语和法语对应表达。</div>
+    <button class="primary reveal" type="button" id="revealBtn">显示答案</button>
+    <div id="answer" class="answer hidden">
+      <div class="meaningGrid" id="studyMeaningGrid"></div>
+      <section class="usageBlock"><div class="blockTitle"><h2>常用搭配 / 相关表达</h2><span id="studyUsageSource"></span></div><div class="quadList" id="studyPhrases"></div></section>
+      <section class="usageBlock"><div class="blockTitle"><h2>四语例句</h2><span id="studyExampleSource"></span></div><div class="quadList examples" id="studyExamples"></div></section>
+      <button class="linkButton" type="button" id="openStudyDetail">查看完整词卡与学习记录</button>
+      <div class="rating"><button type="button" data-rate="again"><b>忘记</b><small>约 10 分钟</small></button><button type="button" data-rate="hard"><b>困难</b><small>短间隔</small></button><button type="button" data-rate="good"><b>记得</b><small>正常间隔</small></button><button type="button" data-rate="easy"><b>熟练</b><small>长间隔</small></button></div>
+      <button class="secondary full" type="button" id="knownCurrent">这个词我原本就会</button>
+    </div>
+  </article>
+</section>
+
+<section id="browseView" class="view">
+  <div class="sectionHead"><button class="back" type="button" data-view="homeView">‹</button><h1>完整词库</h1><button class="textbtn" type="button" id="resetFilters">重置</button></div>
+  <div class="searchShell"><span>⌕</span><input class="search" id="searchInput" inputmode="search" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="搜索单词、变形、释义、德语或法语"><button type="button" id="clearSearch">×</button></div>
+  <p class="searchHelp" id="searchHelp">支持词形还原与相关度排序，例如 contaminated → contaminate。</p>
+  <div class="filterScroller"><button class="chip active" type="button" data-band="all">全部层级</button><button class="chip" type="button" data-band="core">核心</button><button class="chip" type="button" data-band="upper">中高级</button><button class="chip" type="button" data-band="academic">学术</button><button class="chip" type="button" data-band="advanced">高级</button></div>
+  <div class="filterRow"><label>状态<select id="statusFilter"><option value="all">全部状态</option><option value="new">未学习</option><option value="learning">学习中</option><option value="due">到期</option><option value="mastered">已掌握</option><option value="known">原本已会</option><option value="favorite">收藏</option></select></label><label>词性<select id="posFilter"><option value="all">全部词性</option><option value="noun">名词</option><option value="verb">动词</option><option value="adjective">形容词</option><option value="adverb">副词</option></select></label><label>排序<select id="sortFilter"><option value="relevance">相关度 / 词频</option><option value="rank">词频序</option><option value="alpha">字母序</option><option value="recent">最近学习</option></select></label></div>
+  <div class="resultMeta"><span id="resultSummary">正在准备词库…</span><button class="linkButton inline" type="button" id="jumpRankBtn">跳到序号</button></div>
+  <div id="searchResults" class="results"></div>
+  <nav class="pager" id="pager"><button class="secondary" type="button" id="prevPage">上一页</button><button class="pageInfo" type="button" id="pageInfo">第 1 / 1 页</button><button class="secondary" type="button" id="nextPage">下一页</button></nav>
+</section>
+
+<section id="statsView" class="view">
+  <div class="sectionHead"><button class="back" type="button" data-view="homeView">‹</button><h1>学习统计</h1><span></span></div>
+  <div class="statsGrid"><button class="card statCard" type="button" data-open-status="learning"><strong id="statSeen">0</strong><span>已接触</span></button><button class="card statCard" type="button" data-open-status="mastered"><strong id="statMastered">0</strong><span>已掌握</span></button><div class="card statCard"><strong id="statReviews">0</strong><span>累计评分</span></div><button class="card statCard" type="button" data-open-status="known"><strong id="statKnown">0</strong><span>原本已会</span></button></div>
+  <div class="card chartCard"><h2>未来 7 天到期量</h2><div id="forecast" class="forecast"></div></div>
+  <div class="card listCard"><div class="blockTitle"><h2>最近学习</h2><button class="linkButton inline" type="button" data-open-status="learning">查看全部</button></div><div id="recentList" class="miniList"></div></div>
+</section>
+
+<section id="settingsView" class="view">
+  <div class="sectionHead"><button class="back" type="button" data-view="homeView">‹</button><h1>设置</h1><span></span></div>
+  <div class="card settings"><label>每天新词 <input id="dailyNew" type="number" min="0" max="100"></label><label>每天最多复习 <input id="reviewCap" type="number" min="10" max="500"></label><label>新词起点 <select id="startBand"><option value="1">完整 10,000（从核心开始）</option><option value="2501">从中高级 2,501 开始</option><option value="5001">从学术扩展 5,001 开始</option><option value="8001">从高级拓展 8,001 开始</option></select></label><label>掌握至少成功次数 <input id="masterReps" type="number" min="3" max="20"></label><label>掌握所需长期间隔（天） <input id="masterDays" type="number" min="14" max="180"></label><label>每页显示 <select id="pageSize"><option value="40">40 个</option><option value="80">80 个</option><option value="120">120 个</option></select></label><button class="primary full" type="button" id="saveSettings">保存设置</button></div>
+  <div class="card settings"><h2>基础词批量状态</h2><p class="settingNote">只标记尚无个人复习记录的核心 2,500 词，可撤销。</p><button class="secondary full" type="button" id="foundationToggle">将核心 2,500 词标记为已会</button></div>
+  <div class="card settings"><h2>数据与迁移</h2><button class="secondary full" type="button" id="exportBtn">导出完整学习备份</button><label class="secondary full fileLabel">导入学习备份<input id="importInput" type="file" accept="application/json"></label><button class="danger full" type="button" id="resetBtn">清空学习记录</button></div>
+  <div class="card tiny"><b>词库说明</b><p>严格版词库只接受同一 WordNet/ILI 概念下同时存在中、英、德、法对应词的卡片；词网没有自然例句时会显示明确标注的结构化语境。</p></div>
+</section>
+</main>
+
+<div class="dialogBackdrop hidden" id="detailBackdrop">
+  <section class="detailDialog" role="dialog" aria-modal="true">
+    <header class="detailHeader"><button class="iconbtn" type="button" id="closeDetail">×</button><div><small>完整词卡</small><h1 id="detailWord">—</h1></div><button class="iconbtn" type="button" id="favoriteBtn">☆</button></header>
+    <div class="detailScroll">
+      <div class="badges" id="detailBadges"></div>
+      <div class="detailActions"><button class="speakPill" type="button" data-lang="en-US" data-target="detailWord">🔊 English</button><button class="speakPill" type="button" id="speakGerman">🔊 Deutsch</button><button class="speakPill" type="button" id="speakFrench">🔊 Français</button></div>
+      <div class="meaningGrid" id="detailMeaningGrid"></div>
+      <section class="usageBlock"><div class="blockTitle"><h2>常用搭配 / 相关表达</h2><span id="detailUsageSource"></span></div><div class="quadList" id="detailPhrases"></div></section>
+      <section class="usageBlock"><div class="blockTitle"><h2>四语例句</h2><span id="detailExampleSource"></span></div><div class="quadList examples" id="detailExamples"></div></section>
+      <section class="progressPanel"><h2>学习记录</h2><div id="detailProgress"></div></section>
+      <div class="dialogButtons"><button class="secondary" type="button" id="detailKnownBtn">标记原本已会</button><button class="secondary" type="button" id="detailRelearnBtn">重新加入复习</button><button class="danger" type="button" id="detailResetBtn">重置这个词的学习记录</button></div>
+    </div>
+  </section>
 </div>
-<script src="vocab/meta.js"></script>
-<script src="vocab/part-00.js"></script>
-<script src="vocab/part-01.js"></script>
-<script src="vocab/part-02.js"></script>
-<script src="vocab/part-03.js"></script>
-<script src="vocab/part-04.js"></script>
-<script src="vocab/part-05.js"></script>
-<script src="vocab/part-06.js"></script>
-<script src="vocab/part-07.js"></script>
-<script src="vocab/part-08.js"></script>
-<script src="vocab/part-09.js"></script>
-<script src="app.js"></script>
+<div class="toast" id="toast"></div>
+</div>
+<script src="vocab/meta.js?v=6"></script>
+<script src="vocab/part-00.js?v=6"></script><script src="vocab/part-01.js?v=6"></script><script src="vocab/part-02.js?v=6"></script><script src="vocab/part-03.js?v=6"></script><script src="vocab/part-04.js?v=6"></script><script src="vocab/part-05.js?v=6"></script><script src="vocab/part-06.js?v=6"></script><script src="vocab/part-07.js?v=6"></script><script src="vocab/part-08.js?v=6"></script><script src="vocab/part-09.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
