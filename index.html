@@ -137,7 +137,7 @@
 
   <div class="card settings">
     <h2>AI 四语学习包</h2>
-    <p class="settingNote">AI 按词生成并缓存：三语词形、词族、同义/反义词、核心搭配和平行例句。每一行都以中文语义为锚点，英语、德语、法语必须表达同一功能，而不是逐字硬译。</p>
+    <p class="settingNote">AI 按词生成并缓存：三语词形、词族、同义/反义词、核心搭配和平行例句；搭配和例句可反复扩展并自动去重。每一行都以中文语义为锚点，英语、德语、法语必须表达同一功能，而不是逐字硬译。</p>
     <label>模型<select id="aiModel"><option value="claude-sonnet-4-6">Claude Sonnet 4.6（推荐）</option><option value="gpt-5.5">GPT-5.5（高质量）</option><option value="gpt-5.4">GPT-5.4（稳定）</option></select></label>
     <label class="toggleLabel"><span>自动为打开的词生成</span><input id="autoAI" type="checkbox"></label>
     <label class="toggleLabel"><span>双重校对（生成后再批判修订）</span><input id="doublePass" type="checkbox"></label>
@@ -183,8 +183,8 @@
         <section class="richSection"><div class="blockTitle"><h2>词族与派生</h2><span>按功能四语对照</span></div><div class="alignedTable" id="familiesTable"></div></section>
         <section class="richSection"><div class="blockTitle"><h2>同义词与语义差异</h2><span>不是简单词表堆砌</span></div><div class="alignedTable" id="synonymsTable"></div></section>
         <section class="richSection"><div class="blockTitle"><h2>反义词 / 对立表达</h2><span>同一语义轴</span></div><div class="alignedTable" id="antonymsTable"></div></section>
-        <section class="richSection"><div class="blockTitle"><h2>核心常用搭配</h2><button class="linkButton inline" type="button" id="expandCollocationsBtn">继续扩展</button></div><div class="alignedTable" id="collocationsTable"></div></section>
-        <section class="richSection"><div class="blockTitle"><h2>四语平行例句</h2><button class="linkButton inline" type="button" id="expandExamplesBtn">更多例句</button></div><div class="exampleDeck" id="examplesDeck"></div></section>
+        <section class="richSection"><div class="blockTitle"><h2>核心常用搭配</h2><button class="linkButton inline" type="button" id="expandCollocationsBtn">继续扩展（可重复）</button></div><div class="alignedTable" id="collocationsTable"></div></section>
+        <section class="richSection"><div class="blockTitle"><h2>四语平行例句</h2><button class="linkButton inline" type="button" id="expandExamplesBtn">继续生成（可重复）</button></div><div class="exampleDeck" id="examplesDeck"></div></section>
         <section class="richSection"><div class="blockTitle"><h2>易混点与使用限制</h2><span>语域、搭配限制、假朋友</span></div><div class="noteList" id="usageNotes"></div></section>
         <div class="packActions"><button class="secondary" type="button" id="reviewAiBtn">AI 再校对</button><button class="secondary" type="button" id="regenerateAiBtn">重新生成</button><button class="secondary" type="button" id="deleteAiBtn">删除缓存</button></div>
       </div>

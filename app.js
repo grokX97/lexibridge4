@@ -610,7 +610,7 @@ function normalizeAlignedRows(rows,kind){
     zh:String(x?.zh||''),en:String(x?.en||''),de:String(x?.de||''),fr:String(x?.fr||''),
     register:String(x?.register||''),noteZh:String(x?.noteZh||''),differenceZh:String(x?.differenceZh||'')
   })).filter(x=>x.zh&&x.en&&x.de&&x.fr);
-  return out.slice(0,kind==='collocations'?30:kind==='examples'?20:20);
+  return out.slice(0,kind==='collocations'?240:kind==='examples'?120:80);
 }
 function normalizePack(raw,c){
   if(!raw||typeof raw!=='object')throw new Error('AI 学习包为空');
@@ -714,7 +714,7 @@ async function expandPack(c,pack,type){
     const field=type;
     const old=pack[field]||[],seen=new Set(old.map(x=>normalize([x.en,x.de,x.fr].join('|'))));
     for(const row of rows){const k=normalize([row.en,row.de,row.fr].join('|'));if(!seen.has(k)){old.push(row);seen.add(k);}}
-    pack[field]=old.slice(0,type==='collocations'?30:20);
+    pack[field]=old.slice(0,type==='collocations'?240:120);
     pack.generatedAt=new Date().toISOString();
     pack.audit.summaryZh=`在现有双重校对学习包上继续扩展了${type==='collocations'?'搭配':'例句'}。`;
     await savePack(c,pack);return pack;
