@@ -2,15 +2,20 @@
   "cards": 10000,
   "uniqueEnglish": 10000,
   "shards": 10,
-  "frequencyRanked": 10000,
-  "alignedFirstFallbackOnlyWhenMissing": true,
+  "frequencyRanked": 7179,
+  "strictSameConceptAllFourLanguages": true,
+  "independentBilingualFallbacks": false,
+  "strictMissesBeforeTarget": 83295,
+  "naturalEnglishExampleCards": 5072,
+  "naturalZhExampleCards": 0,
+  "naturalDeExampleCards": 510,
+  "naturalFrExampleCards": 0,
   "sources": [
     "omw-en:1.4",
     "omw-cmn:1.4",
     "omw-fr:1.4",
     "odenet:1.4",
-    "FrequencyWords",
-    "word2word fallback"
+    "FrequencyWords"
   ],
-  "seconds": 73.4
+  "seconds": 126.4
 }
