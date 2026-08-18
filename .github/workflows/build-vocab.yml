@@ -1,0 +1,63 @@
+name: Build 10k vocabulary corpus
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_vocab.py
+      - .github/workflows/build-vocab.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lexibridge-vocab-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install lexical tooling
+        run: python -m pip install --upgrade 'wn==1.1.0' 'word2word==1.0.0' requests wget
+
+      - name: Build exactly 10,000 complete EN/ZH/DE/FR cards
+        run: python scripts/build_vocab.py
+
+      - name: Validate generated corpus
+        run: |
+          python - <<'PY'
+          import json, pathlib, re
+          audit=json.loads(pathlib.Path('vocab/BUILD_AUDIT.json').read_text())
+          assert audit['cards']==10000, audit
+          assert audit['uniqueEnglish']==10000, audit
+          parts=sorted(pathlib.Path('vocab').glob('part-*.js'))
+          assert len(parts)==10, len(parts)
+          for p in parts:
+              assert p.stat().st_size > 1000, p
+          print('LEXIBRIDGE_10000_CORPUS_OK')
+          PY
+
+      - name: Commit generated shards
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add vocab/
+          if git diff --cached --quiet; then
+            echo 'Vocabulary corpus is already current.'
+          else
+            git commit -m 'Build 10k multilingual vocabulary corpus'
+            git push
+          fi
