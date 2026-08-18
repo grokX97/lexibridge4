@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Build LexiBridge's 10,000-card EN/ZH/DE/FR corpus from open lexical data.
+"""Build LexiBridge 10k EN/ZH/DE/FR concept-aligned corpus.
 
-Primary semantic backbone: OMW English WordNet 3.0. Translations first use
-ILI-aligned Chinese Open Wordnet, WOLF and OdeNet; corpus-derived word2word
-translations are used only as a coverage fallback. Output is compact JS so the
-static PWA can work offline after its first successful load.
+Hard rule: every accepted card must have English, Chinese, German and French
+lemmas attached to the SAME WordNet/ILI concept. No independent bilingual
+fallback is allowed, because that can silently mix senses across languages.
 """
 from __future__ import annotations
 
@@ -32,6 +31,7 @@ TOPICS = [
 POS_CODE = {"n": 0, "v": 1, "a": 2, "s": 2, "r": 3}
 WORD_RE = re.compile(r"^[A-Za-z][A-Za-z'-]{1,34}$")
 BAD = {"fuck", "fucking", "shit", "bitch", "ass", "cunt", "dick", "porn"}
+LEXICONS = {"zh": "omw-cmn:1.4", "de": "odenet:1.4", "fr": "omw-fr:1.4"}
 
 
 def download_wordnets() -> None:
@@ -40,16 +40,16 @@ def download_wordnets() -> None:
         try:
             wn.download(spec)
         except Exception as exc:
-            # Wn raises if already installed in some versions; verify below.
             print(f"download note for {spec}: {exc}", file=sys.stderr)
 
 
 def frequency_words() -> tuple[list[str], dict[str, tuple[int, int]]]:
     url = "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/en/en_50k.txt"
-    text = requests.get(url, timeout=90).text
+    resp = requests.get(url, timeout=90)
+    resp.raise_for_status()
     words: list[str] = []
     freq: dict[str, tuple[int, int]] = {}
-    for line in text.splitlines():
+    for line in resp.text.splitlines():
         try:
             word, count = line.rsplit(" ", 1)
             word = word.strip().lower()
@@ -64,53 +64,80 @@ def frequency_words() -> tuple[list[str], dict[str, tuple[int, int]]]:
     return words, freq
 
 
-def first_lemma(synsets) -> str | None:
-    for ss in synsets:
-        for lemma in ss.lemmas():
-            x = lemma.replace("_", " ").strip()
-            if x and len(x) <= 70:
-                return x
+def clean_lemma(value: str, *, english: bool = False) -> str | None:
+    value = str(value).replace("_", " ").strip()
+    if not value or len(value) > 80:
+        return None
+    if english:
+        value = value.lower()
+        if " " in value or not WORD_RE.match(value) or value in BAD:
+            return None
+    return value
+
+
+def unique(seq):
+    out = []
+    seen = set()
+    for x in seq:
+        if not x:
+            continue
+        k = x.casefold()
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(x)
+    return out
+
+
+def safe_examples(ss) -> list[str]:
+    try:
+        vals = ss.examples() or []
+    except Exception:
+        vals = []
+    return unique([str(x).strip() for x in vals if str(x).strip() and len(str(x).strip()) <= 240])[:2]
+
+
+def synset_bundle(ss, lexicon: str) -> dict | None:
+    try:
+        translated = ss.translate(lexicon=lexicon) or []
+    except Exception:
+        return None
+    for tss in translated:
+        try:
+            lemmas = unique([clean_lemma(x) for x in tss.lemmas()])
+        except Exception:
+            lemmas = []
+        lemmas = [x for x in lemmas if x]
+        if not lemmas:
+            continue
+        examples = safe_examples(tss)
+        return {"head": lemmas[0], "related": lemmas[1:5], "example": examples[0] if examples else ""}
     return None
 
 
-def aligned(ss, lexicon: str) -> str | None:
+def english_related(ss, word: str) -> list[str]:
     try:
-        return first_lemma(ss.translate(lexicon=lexicon))
+        lemmas = unique([clean_lemma(x) for x in ss.lemmas()])
+    except Exception:
+        lemmas = []
+    return [x for x in lemmas if x and x.casefold() != word.casefold()][:5]
+
+
+def choose_aligned_synset(en, word: str):
+    try:
+        synsets = en.synsets(word)
     except Exception:
         return None
-
-
-def load_fallbacks():
-    """Load corpus-derived dictionaries only if needed for coverage."""
-    try:
-        from word2word import Word2word
-        print("Loading word2word fallbacks", flush=True)
-        return {
-            "de": Word2word("en", "de"),
-            "fr": Word2word("en", "fr"),
-            "zh": Word2word("en", "zh_cn"),
-        }
-    except Exception as exc:
-        print(f"word2word fallback unavailable: {exc}", file=sys.stderr)
-        return {}
-
-
-def fallback(model, word: str) -> str | None:
-    if model is None:
-        return None
-    try:
-        vals = model(word)
-    except Exception:
-        return None
-    for val in vals:
-        val = str(val).strip()
-        if val and len(val) <= 70:
-            return val
+    for ss in synsets:
+        if ss.pos not in POS_CODE:
+            continue
+        bundles = {lang: synset_bundle(ss, lex) for lang, lex in LEXICONS.items()}
+        if all(bundles.values()):
+            return ss, bundles
     return None
 
 
 def level_code(rank: int) -> int:
-    # Broad learning bands, deliberately not claimed as official CEFR certification.
     if rank <= 1500: return 0
     if rank <= 3000: return 1
     if rank <= 5000: return 2
@@ -143,37 +170,20 @@ def topic_code(defn: str, pos: str) -> int:
     return 2
 
 
-def clean_en_lemma(word: str) -> str | None:
-    word = word.replace("_", " ").strip().lower()
-    if " " in word or not WORD_RE.match(word) or word in BAD:
-        return None
-    return word
-
-
-def choose_synset(en, word: str):
-    try:
-        synsets = en.synsets(word)
-    except Exception:
-        return None
-    # N/V/adj/adv only; WN order preserves its preferred sense ordering.
-    return next((ss for ss in synsets if ss.pos in POS_CODE), None)
-
-
 def main() -> None:
     started = time.time()
     download_wordnets()
     en = wn.Wordnet("omw-en:1.4")
     words, freq = frequency_words()
-    fallbacks = None
+
     rows: list[list] = []
     seen: set[str] = set()
+    strict_misses = 0
 
-    # Frequency-ranked candidates first.
     candidates = list(words)
-    # Then extend using every canonical English WordNet lemma, preserving deterministic order.
     extra = []
     for w in en.words():
-        lemma = clean_en_lemma(w.lemma())
+        lemma = clean_lemma(w.lemma(), english=True)
         if lemma and lemma not in freq:
             extra.append(lemma)
     candidates.extend(sorted(set(extra)))
@@ -183,9 +193,11 @@ def main() -> None:
             break
         if word in seen:
             continue
-        ss = choose_synset(en, word)
-        if ss is None:
+        chosen = choose_aligned_synset(en, word)
+        if chosen is None:
+            strict_misses += 1
             continue
+        ss, bundles = chosen
         try:
             definition = (ss.definition() or "").strip()
         except Exception:
@@ -193,53 +205,71 @@ def main() -> None:
         if not definition:
             continue
 
-        zh = aligned(ss, "omw-cmn:1.4")
-        de = aligned(ss, "odenet:1.4")
-        fr = aligned(ss, "omw-fr:1.4")
-
-        if not (zh and de and fr):
-            if fallbacks is None:
-                fallbacks = load_fallbacks()
-            zh = zh or fallback(fallbacks.get("zh"), word)
-            de = de or fallback(fallbacks.get("de"), word)
-            fr = fr or fallback(fallbacks.get("fr"), word)
-        if not (zh and de and fr):
-            continue
-
+        en_examples = safe_examples(ss)
         rank = len(rows) + 1
         f_rank, f_count = freq.get(word, (None, None))
-        syn_id = str(ss.id).split("-")[-2:] if hasattr(ss, "id") else []
-        syn_id = "-".join(syn_id) if syn_id else str(rank)
+        syn_id = str(getattr(ss, "id", rank))
         rows.append([
-            word, POS_CODE.get(ss.pos, 0), level_code(rank), topic_code(definition, ss.pos),
-            definition, zh, de, fr, f_rank, f_count, syn_id, 0,
+            word,
+            POS_CODE.get(ss.pos, 0),
+            level_code(rank),
+            topic_code(definition, ss.pos),
+            definition,
+            bundles["zh"]["head"],
+            bundles["de"]["head"],
+            bundles["fr"]["head"],
+            f_rank,
+            f_count,
+            syn_id,
+            2,
+            en_examples[0] if en_examples else "",
+            bundles["zh"]["example"],
+            bundles["de"]["example"],
+            bundles["fr"]["example"],
+            english_related(ss, word),
+            bundles["zh"]["related"],
+            bundles["de"]["related"],
+            bundles["fr"]["related"],
         ])
         seen.add(word)
         if rank % 500 == 0:
             print(f"accepted {rank}/{TARGET}: {word}", flush=True)
 
     if len(rows) != TARGET:
-        raise SystemExit(f"Could build only {len(rows)} complete four-language cards; refusing partial corpus")
+        raise SystemExit(
+            f"Could build only {len(rows)} strictly concept-aligned EN/ZH/DE/FR cards; "
+            "refusing to reintroduce sense-mixing fallbacks"
+        )
 
-    # Fixed-size shards: compact, cacheable, and friendlier to mobile browsers/GitHub Pages.
     for old in OUT.glob("part-*.js"):
         old.unlink()
     shard_size = 1000
     for i in range(0, TARGET, shard_size):
-        shard = rows[i:i+shard_size]
+        shard = rows[i:i + shard_size]
         payload = json.dumps(shard, ensure_ascii=False, separators=(",", ":"))
-        (OUT / f"part-{i//shard_size:02d}.js").write_text(
+        (OUT / f"part-{i // shard_size:02d}.js").write_text(
             "window.LB4_ROWS=window.LB4_ROWS||[];window.LB4_ROWS.push(..." + payload + ");\n",
             encoding="utf-8",
         )
 
-    meta = "window.LB4_TOPICS=" + json.dumps(TOPICS, ensure_ascii=False, separators=(",", ":")) + ";window.LB4_ROWS=[];\n"
+    meta = (
+        "window.LB4_TOPICS=" + json.dumps(TOPICS, ensure_ascii=False, separators=(",", ":")) +
+        ";window.LB4_ROWS=[];window.LB4_SCHEMA=2;\n"
+    )
     (OUT / "meta.js").write_text(meta, encoding="utf-8")
     audit = {
-        "cards": len(rows), "uniqueEnglish": len(seen), "shards": 10,
+        "cards": len(rows),
+        "uniqueEnglish": len(seen),
+        "shards": 10,
         "frequencyRanked": sum(1 for r in rows if r[8] is not None),
-        "alignedFirstFallbackOnlyWhenMissing": True,
-        "sources": ["omw-en:1.4", "omw-cmn:1.4", "omw-fr:1.4", "odenet:1.4", "FrequencyWords", "word2word fallback"],
+        "strictSameConceptAllFourLanguages": True,
+        "independentBilingualFallbacks": False,
+        "strictMissesBeforeTarget": strict_misses,
+        "naturalEnglishExampleCards": sum(1 for r in rows if r[12]),
+        "naturalZhExampleCards": sum(1 for r in rows if r[13]),
+        "naturalDeExampleCards": sum(1 for r in rows if r[14]),
+        "naturalFrExampleCards": sum(1 for r in rows if r[15]),
+        "sources": ["omw-en:1.4", "omw-cmn:1.4", "omw-fr:1.4", "odenet:1.4", "FrequencyWords"],
         "seconds": round(time.time() - started, 1),
     }
     (OUT / "BUILD_AUDIT.json").write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
