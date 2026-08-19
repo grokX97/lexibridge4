@@ -17,9 +17,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply race and state repair
+      - name: Apply race state and canonical-search repair
         run: |
           python scripts/patch_v12.py
+          python scripts/patch_v12b.py
+          python scripts/patch_e2e_v12.py
           node --check app.js
 
       - name: Static DOM corpus and security audit
@@ -37,7 +39,9 @@ jobs:
           assert '这一语言我原本就会' not in html
           assert '>这个词我认识<' in html
           assert 'studyEpoch' in js and 'detailEpoch' in js and 'searchEpoch' in js
-          assert 'currentTask!==task' in js
+          assert 'currentTask!==task' in js and 'detailCard!==card' in js
+          assert 'AI 识别词形 / 查询' in js
+          assert 'await putAnalysis(a.word,a)' in js
           assert 'puter' not in js.lower() and 'puter' not in html.lower()
           assert not re.search(r'(?i)(sk-[A-Za-z0-9_-]{20,}|DEEPSEEK_API_KEY\s*=\s*["\'][^"\']+)',js+html)
           rows=[]
@@ -51,7 +55,7 @@ jobs:
           assert len(set(heads))==10000
           assert 'lundi' not in heads, 'French lundi leaked into English headword corpus'
           assert all(re.fullmatch(r"[a-z][a-z'-]{1,34}",w) for w in heads)
-          Path('QA_STATIC_V12.json').write_text(json.dumps({'nodeSyntax':'PASS','domRefs':len(refs),'missingDomIds':missing,'cards':len(rows),'uniqueHeads':len(set(heads)),'lundiEnglishHeadword':False,'puterRemoved':True,'secretLeakCheck':'PASS'},indent=2)+'\n')
+          Path('QA_STATIC_V12.json').write_text(json.dumps({'nodeSyntax':'PASS','domRefs':len(refs),'missingDomIds':missing,'cards':len(rows),'uniqueHeads':len(set(heads)),'lundiEnglishHeadword':False,'puterRemoved':True,'secretLeakCheck':'PASS','asyncRaceGuards':'PASS','canonicalLookupUI':'PASS'},indent=2)+'\n')
           print('STATIC_V12_OK')
           PY
 
@@ -68,7 +72,7 @@ jobs:
           node qa/e2e_v12.mjs > QA_BROWSER_V12.json
           cat QA_BROWSER_V12.json
 
-      - name: Live DeepSeek proxy smoke and security checks
+      - name: Live DeepSeek proxy smoke security and lemma checks
         run: |
           python - <<'PY'
           import json,urllib.request,urllib.error,pathlib
@@ -99,7 +103,10 @@ jobs:
           assert senses
           z=' '.join((x.get('zhDefinition','')+' '+x.get('zhExplanation','')) for x in senses)
           assert any(k in z for k in ['即兴','没有事先准备','临时']),z
-          pathlib.Path('QA_BACKEND_V12.json').write_text(json.dumps({'health':h,'getLexiStatus':gs,'badOriginStatus':os,'extemporeStatus':s,'extemporeSenseCount':len(senses),'extemporeChineseNatural':True},ensure_ascii=False,indent=2)+'\n')
+          cs,cd=req(A,{'action':'analyze','word':'contaminated','base':{}},origin='https://grokx97.github.io')
+          assert cs==200 and cd.get('ok'),(cs,cd)
+          assert str((cd.get('result') or {}).get('word','')).lower()=='contaminate',cd
+          pathlib.Path('QA_BACKEND_V12.json').write_text(json.dumps({'health':h,'getLexiStatus':gs,'badOriginStatus':os,'extemporeStatus':s,'extemporeSenseCount':len(senses),'extemporeChineseNatural':True,'contaminatedStatus':cs,'contaminatedCanonicalLemma':(cd.get('result') or {}).get('word')},ensure_ascii=False,indent=2)+'\n')
           print('BACKEND_V12_OK')
           PY
 
@@ -108,7 +115,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .release-v12
-          git rm -f scripts/patch_v12.py .github/workflows/release-v12.yml
+          git rm -f scripts/patch_v12.py scripts/patch_v12b.py scripts/patch_e2e_v12.py .github/workflows/release-v12.yml
           git add app.js index.html styles.css sw.js qa/e2e_v12.mjs QA_STATIC_V12.json QA_BROWSER_V12.json QA_BACKEND_V12.json
           git commit -m 'Ship stale-safe multilingual study v12 with global regression coverage'
           git push
