@@ -35,7 +35,7 @@ jobs:
           assert not missing,missing
           assert '这一语言我原本就会' not in html and '>这个词我认识<' in html
           assert '<option value="partial">部分语言已掌握</option>' in html
-          for q in ['studyEpoch','detailEpoch','searchEpoch','currentTask!==task','detailCard!==card','analysisFlights','packFlights','function pendingTasks','AI 识别词形 / 查询','await putAnalysis(a.word,a)']:assert q in js,q
+          for q in ['studyEpoch','detailEpoch','searchEpoch','currentTask!==task','detailCard!==card','analysisFlights','packFlights','function pendingTasks','AI 识别词形 / 查询','putAnalysis(out.word,out)']:assert q in js,q
           assert 'puter' not in js.lower() and 'puter' not in html.lower()
           assert not re.search(r'(?i)(sk-[A-Za-z0-9_-]{20,}|DEEPSEEK_API_KEY\s*=\s*["\'][^"\']+)',js+html)
           rows=[]
