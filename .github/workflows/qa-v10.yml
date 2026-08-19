@@ -1,0 +1,42 @@
+name: Validate LexiBridge v10
+on:
+  push:
+    paths:
+      - .github/workflows/qa-v10.yml
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static validation
+        run: |
+          node --check app.js
+          grep -q "lexibridge4-deepseek.vercel.app/api/lexi" app.js
+          ! grep -q "puter" app.js
+          ! grep -q "puter" index.html
+          grep -q "senseTabs" index.html
+          grep -q "collocationsTable" index.html
+          grep -q "examplesDeck" index.html
+          grep -q "app.js?v=10" index.html
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          html=Path('index.html').read_text()
+          js=Path('app.js').read_text()
+          ids=set(re.findall(r'id="([^"]+)"',html))
+          refs=set(re.findall(r"\$\('#([^']+)'\)",js))
+          missing=sorted(refs-ids)
+          assert not missing, missing
+          out={'nodeSyntax':'PASS','puterRemoved':True,'deepseekProxyBound':True,'referencedDomIds':len(refs),'missingDomIds':missing}
+          Path('V10_QA.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(out)
+          PY
+      - name: Commit QA evidence
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add V10_QA.json
+          git commit -m 'Record LexiBridge v10 frontend QA'
+          git push
