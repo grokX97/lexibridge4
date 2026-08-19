@@ -1,0 +1,41 @@
+name: Verify live LexiBridge v10
+on:
+  push:
+    paths:
+      - .github/workflows/online-v10.yml
+permissions:
+  contents: write
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for Pages and verify deployed assets
+        run: |
+          set -euo pipefail
+          BASE='https://grokx97.github.io/lexibridge4'
+          ok=0
+          for i in {1..12}; do
+            curl -fsS --max-time 30 "$BASE/?qa=$RANDOM" -o live.html || true
+            curl -fsS --max-time 30 "$BASE/app.js?qa=$RANDOM" -o live.js || true
+            if grep -q 'app.js?v=10' live.html 2>/dev/null && grep -q 'lexibridge4-deepseek.vercel.app/api/lexi' live.js 2>/dev/null && ! grep -qi 'puter' live.html live.js 2>/dev/null; then ok=1; break; fi
+            sleep 15
+          done
+          python - "$ok" <<'PY'
+          import json,sys,pathlib,datetime
+          ok=bool(int(sys.argv[1]))
+          out={'testedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'onlineV10':ok,'htmlHasV10':'app.js?v=10' in pathlib.Path('live.html').read_text(errors='ignore'),'jsHasDeepSeek':'lexibridge4-deepseek.vercel.app/api/lexi' in pathlib.Path('live.js').read_text(errors='ignore'),'puterAbsent':'puter' not in (pathlib.Path('live.html').read_text(errors='ignore')+pathlib.Path('live.js').read_text(errors='ignore')).lower()}
+          pathlib.Path('ONLINE_QA.json').write_text(json.dumps(out,indent=2)+'\n')
+          assert ok,out
+          print(out)
+          PY
+      - name: Commit evidence
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ONLINE_QA.json || true
+          if ! git diff --cached --quiet; then git commit -m 'Record live LexiBridge v10 smoke evidence'; git push; fi
