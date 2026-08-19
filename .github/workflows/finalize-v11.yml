@@ -1,0 +1,61 @@
+name: Finalize LexiBridge DeepSeek v11
+on:
+  push:
+    paths:
+      - .github/workflows/finalize-v11.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply final quality-first UI logic
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app.js');s=p.read_text()
+          s=s.replace("indexedDB.open('lexibridge4-v10',1)","indexedDB.open('lexibridge4-v11-rich',1)")
+          # Health badge: generation and final review are different models.
+          a=s.index('async function checkBackend(){')
+          b=s.index('\nasync function ensureAnalysis',a)
+          s=s[:a]+'''async function checkBackend(){const pill=$('#backendPill'),txt=$('#backendText');pill.classList.remove('ready','bad');try{const r=await fetch(HEALTH,{cache:'no-store'}),d=await r.json();if(r.ok&&d.ok){pill.classList.add('ready');txt.textContent=(d.models||[]).includes('deepseek-v4-pro')?'Flash 生成 · Pro 终审':'DeepSeek 已连接';}else{pill.classList.add('bad');txt.textContent=d.error||'DeepSeek 未就绪';}}catch{pill.classList.add('bad');txt.textContent='后端未连接';}}''' + s[b:]
+          # Every expansion gets Pro-reviewed when autoReview is enabled.
+          a=s.index('async function expand(kind){')
+          b=s.index('\nfunction enabledLangs',a)
+          s=s[:a]+'''async function expand(kind){if(!detailCard||!sense||!sensePack)return;setSenseBusy(kind==='collocations'?'正在扩展并校对搭配…':'正在扩展并校对四语例句…');try{const d=await api({action:'expand',word:detailCard.en,sense,pack:sensePack,kind});const rows=Array.isArray(d?.items)?d.items:[];const field=kind==='examples'?'examples':'collocations',old=Array.isArray(sensePack[field])?sensePack[field]:[],seen=new Set(old.map(x=>norm([x.zh,x.en,x.de,x.fr].join('|'))));for(const x of rows){const k=norm([x.zh,x.en,x.de,x.fr].join('|'));if(k&&!seen.has(k)){old.push(x);seen.add(k);}}sensePack[field]=old;if(state.settings.autoReview&&rows.length){sensePack=await api({action:'review',word:detailCard.en,sense,pack:sensePack});}await putPack(detailCard.en,sense.id,sensePack);renderSensePack();toast(rows.length?`候选新增 ${rows.length} 条，已完成终审`:'没有更多足够可靠的新内容');}catch(e){toast(e.message);}finally{clearSenseBusy();}}''' + s[b:]
+          # Main list shows only high confidence; medium-confidence material remains inspectable but is never called core.
+          a=s.index('function renderSensePack(){')
+          b=s.index('\nfunction renderDetailProgress()',a)
+          s=s[:a]+'''function renderSensePack(){if(!sensePack)return;$('#sensePack').classList.remove('hidden');$('#auditBadge').textContent=sensePack.audit?.reviewed?'V4 Pro 终审✓':'Flash 自检';$('#formsGrid').innerHTML=LANGS.map(l=>formHTML(sensePack.forms?.[l],l)).join('');$('#familiesTable').innerHTML=alignedRows(sensePack.families,'families');$('#synonymsTable').innerHTML=alignedRows(sensePack.synonyms,'synonyms');$('#antonymsTable').innerHTML=alignedRows(sensePack.antonyms,'antonyms');const allCols=sensePack.collocations||[],high=allCols.filter(x=>String(x.confidence||'high').toLowerCase()==='high'),medium=allCols.filter(x=>String(x.confidence||'').toLowerCase()==='medium');$('#collocationsTable').innerHTML=alignedRows(high,'collocations')+(medium.length?`<details class="mediumEvidence"><summary>查看 ${medium.length} 条中置信度扩展（不计入核心记忆）</summary><div class="alignedTable">${alignedRows(medium,'collocations')}</div></details>`:'');$('#examplesDeck').innerHTML=(sensePack.examples||[]).map((x,i)=>`<article class="exampleCard"><header><b>${i+1}. ${esc(x.scenarioZh||'情境')}</b>${x.noteZh?`<span>${esc(x.noteZh)}</span>`:''}</header><p><b>中</b>${esc(x.zh)}</p><p><b>EN</b>${esc(x.en)}</p><p><b>DE</b>${esc(x.de)}</p><p><b>FR</b>${esc(x.fr)}</p></article>`).join('')||'<div class="empty small">暂无可靠例句</div>';$('#usageNotes').innerHTML=(sensePack.usageNotes||[]).map(x=>`<p>${esc(x)}</p>`).join('')||'<p class="muted">暂无特别限制</p>';renderDetailProgress();}''' + s[b:]
+          p.write_text(s)
+
+          p=Path('index.html');h=p.read_text()
+          h=h.replace('?v=10','?v=11').replace('高置信度核心搭配','高置信度核心搭配')
+          h=h.replace('<h2>核心常用搭配</h2>','<h2>高置信度核心搭配</h2>')
+          h=h.replace('默认用 DeepSeek-V4-Flash 非思考模式降低成本；多义分析与详细义项分两步生成，只为真正打开/学习的义项付费。','V4 Flash 负责低成本义项分析与初稿；V4 Pro 只负责最终词典终审。生成与终审均按义项缓存，只为真正打开或学习的内容付费。')
+          p.write_text(h)
+
+          p=Path('styles.css');css=p.read_text()+'''\n.mediumEvidence{margin-top:10px;border-top:1px dashed var(--line);padding-top:9px}.mediumEvidence summary{cursor:pointer;color:var(--muted);font-size:10px;line-height:1.5}.mediumEvidence[open] summary{margin-bottom:8px}\n''';p.write_text(css)
+
+          Path('sw.js').write_text("""const CACHE='lexibridge4-v11';
+          const CORE=['./','./index.html','./styles.css?v=11','./app.js?v=11','./manifest.webmanifest','./icon.svg'];
+          self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
+          self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+          self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;e.respondWith(fetch(e.request).then(resp=>{const cp=resp.clone();caches.open(CACHE).then(c=>c.put(e.request,cp));return resp;}).catch(()=>caches.match(e.request).then(r=>r||caches.match('./index.html'))));});\n""")
+          PY
+          node --check app.js
+          grep -q 'app.js?v=11' index.html
+          grep -q 'Flash 生成 · Pro 终审' app.js
+          grep -q '中置信度扩展' app.js
+          grep -q "lexibridge4-v11-rich" app.js
+      - name: Commit and remove one-shot workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js index.html styles.css sw.js
+          git rm .github/workflows/finalize-v11.yml
+          git commit -m 'Ship quality-first DeepSeek v11 learning experience'
+          git push
