@@ -31,6 +31,16 @@ await page.locator('#closeDetail').click();
 await page.locator('#searchInput').fill('conta');"""
 assert old in s,'search morphology block not found'
 s=s.replace(old,new)
+old="""await page.waitForFunction(()=>document.querySelector('#langBadge')?.textContent.trim()==='Français');
+st=await state(page);assert.equal(st.progress[`${firstWord}|s1|de`]?.known,true);assert.notEqual(st.progress[`${firstWord}|s1|fr`]?.known,true);
+await page.locator('#knownCurrent').click();await page.waitForFunction(w=>document.querySelector('#langBadge')?.textContent.trim()==='English'&&document.querySelector('#studyCue')?.textContent.trim()!==w,firstWord);"""
+new="""await page.waitForFunction(()=>document.querySelector('#langBadge')?.textContent.trim()==='Français');
+st=await state(page);assert.equal(st.progress[`${firstWord}|s1|de`]?.known,true);assert.notEqual(st.progress[`${firstWord}|s1|fr`]?.known,true);
+await page.locator('#revealBtn').waitFor({state:'visible'});await page.locator('#revealBtn').click();await page.locator('#answer').waitFor({state:'visible'});
+await page.locator('#knownCurrent').click();await page.waitForFunction(w=>document.querySelector('#langBadge')?.textContent.trim()==='English'&&document.querySelector('#studyCue')?.textContent.trim()!==w,firstWord);"""
+assert old in s,'French reveal-before-known block not found'
+s=s.replace(old,new)
 p.write_text(s,encoding='utf-8')
 assert "detailWord')?.textContent.trim()==='contaminate'" in s
+assert "langBadge')?.textContent.trim()==='Français'" in s
 print('PATCH_E2E_V12_OK')
