@@ -1,4 +1,4 @@
-name: Verify live LexiBridge v10
+name: Verify live LexiBridge v11
 on:
   push:
     paths:
@@ -13,23 +13,26 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Wait for Pages and verify deployed assets
+      - name: Wait for Pages and verify deployed v11 assets
         run: |
           set -euo pipefail
           BASE='https://grokx97.github.io/lexibridge4'
           ok=0
-          for i in {1..12}; do
+          for i in {1..16}; do
             curl -fsS --max-time 30 "$BASE/?qa=$RANDOM" -o live.html || true
             curl -fsS --max-time 30 "$BASE/app.js?qa=$RANDOM" -o live.js || true
-            if grep -q 'app.js?v=10' live.html 2>/dev/null && grep -q 'lexibridge4-deepseek.vercel.app/api/lexi' live.js 2>/dev/null && ! grep -qi 'puter' live.html live.js 2>/dev/null; then ok=1; break; fi
+            if grep -q 'app.js?v=11' live.html 2>/dev/null && grep -q 'lexibridge4-deepseek.vercel.app/api/lexi' live.js 2>/dev/null && grep -q 'Flash 生成 · Pro 终审' live.js 2>/dev/null && ! grep -qi 'puter' live.html live.js 2>/dev/null; then ok=1; break; fi
             sleep 15
           done
+          node --check app.js
           python - "$ok" <<'PY'
-          import json,sys,pathlib,datetime
-          ok=bool(int(sys.argv[1]))
-          out={'testedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'onlineV10':ok,'htmlHasV10':'app.js?v=10' in pathlib.Path('live.html').read_text(errors='ignore'),'jsHasDeepSeek':'lexibridge4-deepseek.vercel.app/api/lexi' in pathlib.Path('live.js').read_text(errors='ignore'),'puterAbsent':'puter' not in (pathlib.Path('live.html').read_text(errors='ignore')+pathlib.Path('live.js').read_text(errors='ignore')).lower()}
-          pathlib.Path('ONLINE_QA.json').write_text(json.dumps(out,indent=2)+'\n')
-          assert ok,out
+          import json,sys,pathlib,datetime,re
+          ok=bool(int(sys.argv[1]));html=pathlib.Path('live.html').read_text(errors='ignore');js=pathlib.Path('live.js').read_text(errors='ignore')
+          ids=set(re.findall(r'id="([^"]+)"',html));refs=set(re.findall(r"\$\('#([^']+)'\)",js));dynamic={'directLookupBtn','retryAnalysis'}
+          missing=sorted(refs-ids-dynamic)
+          out={'testedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'onlineV11':ok,'htmlHasV11':'app.js?v=11' in html,'jsHasDeepSeek':'lexibridge4-deepseek.vercel.app/api/lexi' in js,'hybridModelLabel':'Flash 生成 · Pro 终审' in js,'puterAbsent':'puter' not in (html+js).lower(),'missingDomIds':missing}
+          pathlib.Path('ONLINE_QA_V11.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n')
+          assert ok and not missing,out
           print(out)
           PY
       - name: Commit evidence
@@ -37,5 +40,5 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ONLINE_QA.json || true
-          if ! git diff --cached --quiet; then git commit -m 'Record live LexiBridge v10 smoke evidence'; git push; fi
+          git add ONLINE_QA_V11.json || true
+          if ! git diff --cached --quiet; then git commit -m 'Record live LexiBridge v11 smoke evidence'; git push; fi
