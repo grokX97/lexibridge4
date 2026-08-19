@@ -7,9 +7,10 @@ const calls=[];
 const senseDelay=new Map();
 
 function analysisFor(word){
-  return {word,wordFrequencyLabel:'中频',wordLevelNotesZh:`${word} 的测试词义说明`,senses:[
-    {id:'s1',rank:1,pos:'noun',frequencyLabel:'核心义',zhDefinition:`核心中文-${word}`,zhExplanation:`核心解释-${word}`,register:'通用',domain:'测试',headwords:{en:{primary:word,alternatives:[]},de:{primary:`de-${word}`,alternatives:[]},fr:{primary:`fr-${word}`,alternatives:[]}},typicalContextsZh:[`核心情境-${word}`]},
-    {id:'s2',rank:2,pos:'verb',frequencyLabel:'常用义',zhDefinition:`第二义-${word}`,zhExplanation:`第二义解释-${word}`,register:'通用',domain:'测试',headwords:{en:{primary:`${word}-sense2`,alternatives:[]},de:{primary:`de2-${word}`,alternatives:[]},fr:{primary:`fr2-${word}`,alternatives:[]}},typicalContextsZh:[`第二情境-${word}`]}
+  const canonical=word==='contaminated'?'contaminate':word;
+  return {word:canonical,inputForm:word,normalizationNoteZh:canonical!==word?`${word} → ${canonical}`:'',wordFrequencyLabel:'中频',wordLevelNotesZh:`${canonical} 的测试词义说明`,senses:[
+    {id:'s1',rank:1,pos:'noun',frequencyLabel:'核心义',zhDefinition:`核心中文-${canonical}`,zhExplanation:`核心解释-${canonical}`,register:'通用',domain:'测试',headwords:{en:{primary:canonical,alternatives:[]},de:{primary:`de-${canonical}`,alternatives:[]},fr:{primary:'lundi',alternatives:[]}},typicalContextsZh:[`核心情境-${canonical}`]},
+    {id:'s2',rank:2,pos:'verb',frequencyLabel:'常用义',zhDefinition:`第二义-${canonical}`,zhExplanation:`第二义解释-${canonical}`,register:'通用',domain:'测试',headwords:{en:{primary:`${canonical}-sense2`,alternatives:[]},de:{primary:`de2-${canonical}`,alternatives:[]},fr:{primary:'lundi-sense2',alternatives:[]}},typicalContextsZh:[`第二情境-${canonical}`]}
   ]};
 }
 function packFor(word,sid){
@@ -35,7 +36,7 @@ async function installRoutes(page){
 async function state(page){return page.evaluate(()=>JSON.parse(localStorage.getItem('lexibridge4_state_v10')||'{}'));}
 async function waitLoaded(page){await page.waitForFunction(()=>document.querySelector('#buildState')?.textContent.includes('10,000'));await page.waitForFunction(()=>!document.querySelector('#startBtn')?.disabled);}
 
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 const errors=[];
 const context=await browser.newContext({viewport:{width:390,height:844}});
 const page=await context.newPage();
@@ -52,7 +53,12 @@ assert.ok(!(await page.content()).includes('这一语言我原本就会'));
 await page.locator('[data-view="browseView"]').first().click();
 await page.locator('#searchInput').fill('contaminated');
 await page.waitForTimeout(250);
-assert.match((await page.locator('#searchResults').textContent()).toLowerCase(),/contaminate/);
+assert.match((await page.locator('#directLookup').textContent()).toLowerCase(),/contaminated/);
+assert.match((await page.locator('#directLookup').textContent()),/识别词形/);
+await page.locator('#directLookupBtn').click();
+await page.waitForFunction(()=>document.querySelector('#detailWord')?.textContent.trim()==='contaminate');
+assert.match(await page.locator('#detailBadges').textContent(),/contaminated.*contaminate/);
+await page.locator('#closeDetail').click();
 await page.locator('#searchInput').fill('conta');
 await page.locator('#searchInput').fill('analysis');
 await page.waitForTimeout(350);
@@ -79,11 +85,16 @@ let st=await state(page);assert.equal(st.progress[`${firstWord}|s1|en`]?.known,t
 // Reveal German task: cached pack must render German, not previous English.
 await page.locator('#revealBtn').click();await page.locator('#answer').waitFor({state:'visible'});await page.waitForFunction(()=>document.querySelector('#studyPreview')?.textContent.includes('de-col-s1'));
 assert.ok(!(await page.locator('#studyPreview').textContent()).includes('en-col-s1'));
+assert.equal(calls.filter(x=>x.action==='sense'&&x.word===firstWord&&x.sense?.id==='s1').length,1,'same sense generated twice while switching target language');
 
 // Double-click protection: two synchronous clicks advance exactly one task.
 await page.evaluate(()=>{const b=document.querySelector('#knownCurrent');b.click();b.click();});
 await page.waitForFunction(()=>document.querySelector('#langBadge')?.textContent.trim()==='Français');
+assert.equal((await page.locator('#studyCue').textContent()).trim(),'lundi','exact stale-content regression target did not become lundi');
+assert.ok(await page.locator('#answer').evaluate(el=>el.classList.contains('hidden')),'previous answer remained visible under lundi');
+assert.equal((await page.locator('#studyPreview').textContent()).trim(),'','previous lower content remained under lundi');
 st=await state(page);assert.equal(st.progress[`${firstWord}|s1|de`]?.known,true);assert.notEqual(st.progress[`${firstWord}|s1|fr`]?.known,true);
+await page.locator('#revealBtn').waitFor({state:'visible'});await page.locator('#revealBtn').click();await page.locator('#answer').waitFor({state:'visible'});
 await page.locator('#knownCurrent').click();await page.waitForFunction(w=>document.querySelector('#langBadge')?.textContent.trim()==='English'&&document.querySelector('#studyCue')?.textContent.trim()!==w,firstWord);
 const secondWord=(await page.locator('#studyCue').textContent()).trim();assert.notEqual(secondWord,firstWord);
 assert.ok(await page.locator('#answer').evaluate(el=>el.classList.contains('hidden')));assert.equal((await page.locator('#studyPreview').textContent()).trim(),'');
@@ -110,8 +121,8 @@ assert.match(await page.locator('#formsGrid').textContent(),/sense2|de2-|fr2-/);
 assert.equal(await page.locator('details.mediumEvidence').count(),1);
 await page.locator('#closeDetail').click();
 
-// Settings persistence.
-await page.locator('[data-view="settingsView"]').first().click();await page.locator('#dailyNew').fill('7');await page.locator('#languageMode').selectOption('de');await page.locator('#saveSettings').click();st=await state(page);assert.equal(st.settings.dailyNew,7);assert.equal(st.settings.languageMode,'de');
+// Settings persistence via the same visible navigation a user has from Browse.
+await page.locator('#browseView [data-view="homeView"]').click();await page.locator('#homeView [data-view="settingsView"]').click();await page.locator('#dailyNew').fill('7');await page.locator('#languageMode').selectOption('de');await page.locator('#saveSettings').click();st=await state(page);assert.equal(st.settings.dailyNew,7);assert.equal(st.settings.languageMode,'de');
 
 // Mobile layout and error-free browser execution.
 const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert.ok(overflow<=1,`mobile horizontal overflow ${overflow}px`);
@@ -120,5 +131,8 @@ assert.deepEqual(errors,[],`browser errors: ${errors.join('\n')}`);
 // Desktop smoke in a fresh context.
 const desktop=await browser.newContext({viewport:{width:1440,height:900}});const p2=await desktop.newPage();const errors2=[];p2.on('pageerror',e=>errors2.push(String(e)));await installRoutes(p2);await p2.goto(BASE,{waitUntil:'domcontentloaded'});await waitLoaded(p2);const over2=await p2.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert.ok(over2<=1,`desktop overflow ${over2}`);assert.deepEqual(errors2,[]);await desktop.close();
 
+// Interrupted-session recovery: unfinished DE/FR tasks must survive a reload instead of disappearing.
+const recovery=await browser.newContext({viewport:{width:390,height:844}});const pr=await recovery.newPage();await installRoutes(pr);await pr.goto(BASE,{waitUntil:'domcontentloaded'});await waitLoaded(pr);await pr.locator('#startBtn').click();await pr.locator('#revealBtn').waitFor({state:'visible'});const recoveryWord=(await pr.locator('#studyCue').textContent()).trim();await pr.locator('#revealBtn').click();await pr.locator('#answer').waitFor({state:'visible'});await pr.locator('#knownCurrent').click();await pr.waitForFunction(()=>document.querySelector('#langBadge')?.textContent.trim()==='Deutsch');await pr.reload({waitUntil:'domcontentloaded'});await waitLoaded(pr);assert.equal((await pr.locator('#mastered').textContent()).trim(),'0','one-language known state was incorrectly counted as three-language mastery');await pr.locator('#startBtn').click();await pr.waitForFunction(()=>document.querySelector('#langBadge')?.textContent.trim()==='Deutsch');assert.equal((await pr.locator('#studyCue').textContent()).trim(),`de-${recoveryWord}`,'unfinished German task was lost across reload');await recovery.close();
+
 await context.close();await browser.close();
-console.log(JSON.stringify({ok:true,firstWord,secondWord,apiCalls:calls.length,checks:['10k-load','known-wording','morph-search','search-race','study-race','language-scope','double-click','rating','8-transition-stress','sense-race','quality-tier','settings','mobile-layout','desktop-layout','console-errors']},null,2));
+console.log(JSON.stringify({ok:true,firstWord,secondWord,apiCalls:calls.length,checks:['10k-load','known-wording','canonical-inflection-lookup','search-race','study-race','language-scope','paid-request-dedupe','double-click','rating','8-transition-stress','sense-race','quality-tier','settings','unfinished-session-recovery','three-language-mastery-status','mobile-layout','desktop-layout','console-errors']},null,2));

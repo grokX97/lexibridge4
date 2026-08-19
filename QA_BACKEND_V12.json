@@ -1,0 +1,17 @@
+{
+  "health": {
+    "ok": true,
+    "configured": true,
+    "preferredModel": "deepseek-v4-flash",
+    "models": [
+      "deepseek-v4-flash",
+      "deepseek-v4-pro"
+    ],
+    "proxyVersion": 2
+  },
+  "getLexiStatus": 405,
+  "badOriginStatus": 403,
+  "extemporeNaturalChinese": true,
+  "extemporeSenses": 2,
+  "contaminatedCanonicalLemma": "contaminate"
+}

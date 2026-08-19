@@ -1,0 +1,17 @@
+{
+  "nodeSyntax": "PASS",
+  "missingDomIds": [],
+  "cards": 10000,
+  "uniqueHeads": 10000,
+  "lundiEnglishHeadword": false,
+  "knownWording": "这个词我认识",
+  "secretLeakCheck": "PASS",
+  "puterRemoved": true,
+  "asyncRaceGuards": "PASS",
+  "requestDeduplication": "PASS",
+  "unfinishedLanguageRecovery": "PASS",
+  "threeLanguageMastery": "PASS",
+  "senseBusyReset": "PASS",
+  "eventHandlerGuard": "PASS",
+  "canonicalLookup": "PASS"
+}
