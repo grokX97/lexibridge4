@@ -1,0 +1,11 @@
+{
+  "nodeSyntax": "PASS",
+  "puterRemoved": true,
+  "deepseekProxyBound": true,
+  "referencedDomIds": 96,
+  "dynamicDomIds": [
+    "directLookupBtn",
+    "retryAnalysis"
+  ],
+  "missingDomIds": []
+}
