@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "firstWord": "mon",
+  "secondWord": "registration",
+  "apiCalls": 20,
+  "checks": [
+    "10k-load",
+    "known-wording",
+    "canonical-inflection-lookup",
+    "search-race",
+    "study-race",
+    "language-scope",
+    "paid-request-dedupe",
+    "double-click",
+    "rating",
+    "8-transition-stress",
+    "sense-race",
+    "quality-tier",
+    "settings",
+    "unfinished-session-recovery",
+    "three-language-mastery-status",
+    "mobile-layout",
+    "desktop-layout",
+    "console-errors"
+  ]
+}
